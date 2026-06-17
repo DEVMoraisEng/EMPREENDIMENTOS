@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-17T19:30:28Z",
+  "updated_at": "2026-06-17T19:49:19Z",
   "empreendimentos": [
     {
       "id": "382c5ab5-32d3-80c4-a5ee-c704ee747c5e",
@@ -9,9 +9,9 @@
       "rua": "AVENIDA CAMPINA VERDE",
       "complemento": "QUADRA 09, LOTE 22",
       "cep": "75262-232",
-      "status_label": "NÃO INICIADO",
-      "status_cor": "pendente",
-      "processo_iniciado": false,
+      "status_label": "PROCESSO INICIADO",
+      "status_cor": "processo",
+      "processo_iniciado": true,
       "aprovacao_iniciada": false,
       "aprovacao_concluida": false,
       "obra_iniciada": false,
