@@ -6,8 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Morais Engenharia · Preenchimento de Documentações</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- SheetJS para ler/escrever XLS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -369,13 +367,12 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
       <div class="action-bar">
         <div class="action-lbl">
           <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar FRE preenchida</strong>
-          Baixa o arquivo Excel FRE_v015.xls com os campos preenchidos a partir dos dados acima.
-          O arquivo original não é modificado.
+          Baixa a FRE preenchida gerada automaticamente com os dados do Notion. Formatação original preservada.
         </div>
         <a class="btn-baixar-fre" href="FRE_v015.xls" download="FRE_v015.xls">⬇ Modelo original</a>
-        <button class="btn-gerar verde" id="btn-gerar-fre" onclick="gerarFRE()" disabled>
-          ⬇ Gerar FRE Preenchida
-        </button>
+        <a class="btn-gerar verde" id="btn-gerar-fre" href="#" download style="display:inline-block;text-align:center;text-decoration:none;pointer-events:none;opacity:.4">
+          ⬇ Baixar FRE Preenchida
+        </a>
       </div>
       <div id="log-fre"></div>
 
@@ -400,9 +397,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 // ── DADOS ────────────────────────────────────────────────────────────────────
 let DATA_EMP = [];
 let EMP_ATUAL = null;
-let FRE_BUFFER = null;   // ArrayBuffer do XLS original carregado
 
-// ── URL PARAMS ───────────────────────────────────────────────────────────────
 function getParam(k) {
   return new URLSearchParams(window.location.search).get(k) || '';
 }
@@ -410,13 +405,11 @@ function getParam(k) {
 // ── INIT ─────────────────────────────────────────────────────────────────────
 async function init() {
   try {
-    // Carrega data_emp.json
     const resp = await fetch(`data_emp.json?t=${Date.now()}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const json = await resp.json();
     DATA_EMP = json.empreendimentos || [];
 
-    // Popula select
     const sel = document.getElementById('sel-emp');
     DATA_EMP.forEach(emp => {
       const opt = document.createElement('option');
@@ -425,15 +418,8 @@ async function init() {
       sel.appendChild(opt);
     });
 
-    // Se veio com ?id=... na URL, pré-seleciona
     const idParam = getParam('id');
-    if (idParam) {
-      sel.value = idParam;
-      selecionarEmp();
-    }
-
-    // Pré-carrega o FRE para ter o buffer pronto
-    carregarFREOriginal();
+    if (idParam) { sel.value = idParam; selecionarEmp(); }
 
   } catch(e) {
     console.error(e);
@@ -443,49 +429,41 @@ async function init() {
   }
 }
 
-// ── CARREGAR FRE ORIGINAL ────────────────────────────────────────────────────
-async function carregarFREOriginal() {
-  try {
-    const r = await fetch('FRE_v015.xls');
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    FRE_BUFFER = await r.arrayBuffer();
-    console.log('FRE_v015.xls pré-carregado OK');
-  } catch(e) {
-    console.warn('FRE não pré-carregado:', e.message);
-    // Não é erro fatal — tentará no momento da geração
-  }
-}
-
 // ── SELECIONAR EMPREENDIMENTO ────────────────────────────────────────────────
 function selecionarEmp() {
   const id = document.getElementById('sel-emp').value;
+  const btn = document.getElementById('btn-gerar-fre');
+
   if (!id) {
     EMP_ATUAL = null;
     document.getElementById('emp-info').classList.remove('visible');
     document.getElementById('docs-area').style.display = 'none';
     document.getElementById('placeholder').style.display = 'block';
-    document.getElementById('btn-gerar-fre').disabled = true;
+    btn.style.pointerEvents = 'none'; btn.style.opacity = '.4';
     return;
   }
 
   EMP_ATUAL = DATA_EMP.find(e => e.id === id) || null;
   if (!EMP_ATUAL) return;
 
-  // Header info
   document.getElementById('emp-nome-hdr').textContent = EMP_ATUAL.nome;
   const det = [EMP_ATUAL.setor, EMP_ATUAL.cidade, EMP_ATUAL.status_label].filter(Boolean).join(' · ');
   document.getElementById('emp-det-hdr').textContent = det;
   document.getElementById('emp-info').classList.add('visible');
 
-  // Preenche campos com dados do Notion
   preencherFormulario(EMP_ATUAL);
 
-  // Mostra área de documentos
+  // Configura botão de download da FRE gerada pelo servidor
+  const nomeSafe = EMP_ATUAL.nome.replace(/[^a-zA-Z0-9À-ÿ \-_]/g, '').trim().replace(/\s+/g, '_');
+  const nomeArq  = `fre_${nomeSafe}.xls`;
+  btn.href = nomeArq;
+  btn.download = nomeArq;
+  btn.style.pointerEvents = 'auto';
+  btn.style.opacity = '1';
+
   document.getElementById('placeholder').style.display = 'none';
   document.getElementById('docs-area').style.display = 'block';
-  document.getElementById('btn-gerar-fre').disabled = false;
 
-  // URL atualizada sem reload
   const url = new URL(window.location);
   url.searchParams.set('id', id);
   window.history.replaceState({}, '', url);
@@ -493,52 +471,44 @@ function selecionarEmp() {
 
 // ── PREENCHER FORMULÁRIO ─────────────────────────────────────────────────────
 function preencherFormulario(emp) {
-  // Mapeamento campo_id -> valor do empreendimento
   const campos = {
-    'f-nome':          emp.nome,
-    'f-rua':           emp.rua,
-    'f-complemento':   emp.complemento,
-    'f-setor':         emp.setor,
-    'f-cidade':        emp.cidade,
-    'f-cep':           emp.cep,
-    'f-proponente':    emp.proponente,
-    'f-doc-proponente':emp.doc_proponente,
-    'f-construtora':   emp.construtora,
+    'f-nome':           emp.nome,
+    'f-rua':            emp.rua,
+    'f-complemento':    emp.complemento,
+    'f-setor':          emp.setor,
+    'f-cidade':         emp.cidade,
+    'f-cep':            emp.cep,
+    'f-proponente':     emp.proponente,
+    'f-doc-proponente': emp.doc_proponente,
+    'f-construtora':    emp.construtora,
     'f-doc-construtora':emp.doc_construtora,
-    'f-resp-tecnico':  emp.responsavel_tecnico,
-    'f-crea':          emp.crea,
-    'f-doc-resp':      emp.doc_responsavel,
-    'f-incorporador':  emp.incorporador,
+    'f-resp-tecnico':   emp.responsavel_tecnico,
+    'f-crea':           emp.crea,
+    'f-doc-resp':       emp.doc_responsavel,
+    'f-incorporador':   emp.incorporador,
     'f-doc-incorporador':emp.doc_incorporador,
-    'f-contato':       emp.responsavel_tecnico,  // mesmo campo no FRE
-    'f-tel':           emp.tel_contato,
-    'f-email':         emp.email,
-    'f-n-unidades':    emp.n_unidades !== '' ? String(emp.n_unidades) : '',
-    'f-prazo':         emp.prazo_previsto !== '' ? String(emp.prazo_previsto) : '',
-    'f-area-lote':     emp.area_lote !== '' ? String(emp.area_lote) : '',
-    'f-area-equiv':    emp.area_equivalente !== '' ? String(emp.area_equivalente) : '',
+    'f-contato':        emp.responsavel_tecnico,
+    'f-tel':            emp.tel_contato,
+    'f-email':          emp.email,
+    'f-n-unidades':     emp.n_unidades !== '' ? String(emp.n_unidades) : '',
+    'f-prazo':          emp.prazo_previsto !== '' ? String(emp.prazo_previsto) : '',
+    'f-area-lote':      emp.area_lote !== '' ? String(emp.area_lote) : '',
+    'f-area-equiv':     emp.area_equivalente !== '' ? String(emp.area_equivalente) : '',
   };
 
-  // Data de hoje
   document.getElementById('f-data-hoje').value = dataHoje();
 
   Object.entries(campos).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.value = val || '';
-    // Visual: verde se veio do Notion, amarelo se está vazio
     el.classList.remove('notion-fill', 'vazio-warn');
-    if (val) {
-      el.classList.add('notion-fill');
-    } else {
-      el.classList.add('vazio-warn');
-    }
+    el.classList.add(val ? 'notion-fill' : 'vazio-warn');
   });
 }
 
 function dataHoje() {
-  const d = new Date();
-  return d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+  return new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
 }
 
 // ── TROCAR ABA ───────────────────────────────────────────────────────────────
@@ -555,172 +525,8 @@ function log(tipo, msg) {
   el.classList.add('visible');
   el.innerHTML += `<span class="${tipo}">${msg}</span>\n`;
 }
-function limparLog() {
-  const el = document.getElementById('log-fre');
-  el.innerHTML = '';
-  el.classList.remove('visible');
-}
 
-// ── GERAR FRE ────────────────────────────────────────────────────────────────
-async function gerarFRE() {
-  if (!EMP_ATUAL) return;
-  const btn = document.getElementById('btn-gerar-fre');
-  btn.disabled = true;
-  btn.textContent = '⏳ Gerando...';
-  limparLog();
-
-  try {
-    // Garante buffer carregado
-    if (!FRE_BUFFER) {
-      log('warn', 'Carregando FRE_v015.xls...');
-      const r = await fetch('FRE_v015.xls');
-      if (!r.ok) throw new Error(`Não foi possível carregar FRE_v015.xls (HTTP ${r.status}). Verifique se o arquivo está no repositório.`);
-      FRE_BUFFER = await r.arrayBuffer();
-    }
-
-    log('ok', '✓ FRE original carregado');
-
-    // Coleta valores do formulário
-    const vals = coletarValores();
-    log('ok', `✓ ${Object.values(vals).filter(Boolean).length} campos preenchidos`);
-
-    // Abre workbook mantendo formatação
-    const wb = XLSX.read(FRE_BUFFER, {type:'array', cellStyles:true, cellFormulas:true});
-    const ws  = wb.Sheets['FRE'];
-    if (!ws) throw new Error('Aba "FRE" não encontrada no arquivo');
-
-    // Mapeamento: endereço da célula -> placeholder -> valor
-    const mapa = [
-      // ─ Identificação ─
-      {cel:'B7',  de:'{NOME DO EMPRRENDIMENTO}', para: vals.nome},
-      {cel:'B10', de:'{RUA}',                    para: vals.rua},
-      {cel:'M10', de:'{COMPLEMENTO}',             para: vals.complemento},
-      {cel:'B13', de:'{SETOR}',                   para: vals.setor},
-      {cel:'I13', de:'{CIDADE}',                  para: vals.cidade},
-      {cel:'M13', de:'{CEP}',                     para: vals.cep},
-      // ─ Partes ─
-      {cel:'B16', de:'{PROPONENTE}',              para: vals.proponente},
-      {cel:'M16', de:'{DOC. PROPONENTE}',          para: vals.doc_proponente},
-      {cel:'B19', de:'{CONSTRUTORA}',             para: vals.construtora},
-      {cel:'M19', de:'{DOC. CONSTRUTORA}',        para: vals.doc_construtora},
-      {cel:'B22', de:'{RESPONSÁVEL TÉCNICO}',     para: vals.resp_tecnico},
-      {cel:'J22', de:'{CREA}',                    para: vals.crea},
-      {cel:'M22', de:'{DOC. RESPONSÁVEL}',        para: vals.doc_resp},
-      {cel:'B25', de:'{INCORPORADOR}',            para: vals.incorporador},
-      {cel:'M25', de:'{DOC. INCORPORADOR}',       para: vals.doc_incorporador},
-      // ─ Contato ─
-      {cel:'B28', de:'{RESPONSÁVEL TÉCNICO}',     para: vals.contato},
-      {cel:'J28', de:'{TEL. CONTATO}',            para: vals.tel},
-      {cel:'M28', de:'{EMAIL}',                   para: vals.email},
-      // ─ Características ─
-      {cel:'E36', de:'{Nº DE UNIDADES}',          para: vals.n_unidades_raw !== '' ? Number(vals.n_unidades_raw) : ''},
-      {cel:'N59', de:'{PRAZO PREVISTO}',          para: vals.prazo_raw !== '' ? Number(vals.prazo_raw) : ''},
-      {cel:'I66', de:'{ÁREA DO LOTE}',            para: vals.area_lote_raw !== '' ? Number(vals.area_lote_raw) : ''},
-      {cel:'I67', de:'{ÁREA EQUIVALENTE}',        para: vals.area_equiv_raw !== '' ? Number(vals.area_equiv_raw) : ''},
-      // ─ Assinatura ─
-      {cel:'C223', de:'{PROPONENTE}',             para: vals.proponente},
-      {cel:'C224', de:'{DOC. PROPONENTE}',         para: vals.doc_proponente},
-      {cel:'C227', de:'{DATA HOJE}',              para: vals.data_hoje},
-      // ─ Descrição (texto com placeholder embutido) ─
-      {cel:'B41', substituir: true,
-       de:'{Nº UNIDADES}',
-       para: vals.n_unidades_raw !== '' ? String(vals.n_unidades_raw) : '___'},
-    ];
-
-    let preenchidos = 0;
-    let naoEncontrados = [];
-
-    mapa.forEach(({cel, de, para, substituir}) => {
-      if (!ws[cel]) {
-        naoEncontrados.push(`${cel} (${de})`);
-        return;
-      }
-
-      if (substituir) {
-        // Substitui dentro de texto existente
-        const textoAtual = ws[cel].v || '';
-        if (textoAtual.includes(de)) {
-          const novo = textoAtual.split(de).join(String(para));
-          ws[cel].v = novo;
-          ws[cel].w = novo;
-          if (ws[cel].t === 'n') ws[cel].t = 's';
-          preenchidos++;
-        }
-      } else {
-        // Substitui célula inteira
-        const valorAtual = String(ws[cel].v || '');
-        // Só sobrescreve se era o placeholder OU se temos valor
-        if (para !== '' && para !== undefined && para !== null) {
-          if (typeof para === 'number') {
-            ws[cel].v = para;
-            ws[cel].w = String(para);
-            ws[cel].t = 'n';
-          } else {
-            ws[cel].v = String(para);
-            ws[cel].w = String(para);
-            ws[cel].t = 's';
-          }
-          // Remove fórmula se havia
-          delete ws[cel].f;
-          preenchidos++;
-        }
-      }
-    });
-
-    log('ok', `✓ ${preenchidos} células preenchidas na FRE`);
-    if (naoEncontrados.length) {
-      log('warn', `⚠ Células não encontradas: ${naoEncontrados.slice(0,5).join(', ')}${naoEncontrados.length>5?'...':''}`);
-    }
-
-    // Gera e baixa o arquivo
-    const nomeSaida = `FRE_${vals.nome.replace(/[^a-zA-Z0-9À-ú ]/g,'').trim().replace(/\s+/g,'_')}.xls`;
-    XLSX.writeFile(wb, nomeSaida, {bookType:'xls', type:'binary'});
-
-    log('ok', `✓ Arquivo "${nomeSaida}" baixado com sucesso!`);
-
-    document.getElementById('modal-txt').textContent =
-      `O arquivo "${nomeSaida}" foi baixado. Abra no Excel e verifique os campos preenchidos antes de enviar.`;
-    document.getElementById('modal').classList.add('visible');
-
-  } catch(e) {
-    console.error(e);
-    log('err', `✗ Erro: ${e.message}`);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '⬇ Gerar FRE Preenchida';
-  }
-}
-
-function coletarValores() {
-  const g = id => (document.getElementById(id)?.value || '').trim();
-  return {
-    nome:            g('f-nome'),
-    rua:             g('f-rua'),
-    complemento:     g('f-complemento'),
-    setor:           g('f-setor'),
-    cidade:          g('f-cidade'),
-    cep:             g('f-cep'),
-    proponente:      g('f-proponente'),
-    doc_proponente:  g('f-doc-proponente'),
-    construtora:     g('f-construtora'),
-    doc_construtora: g('f-doc-construtora'),
-    resp_tecnico:    g('f-resp-tecnico'),
-    crea:            g('f-crea'),
-    doc_resp:        g('f-doc-resp'),
-    incorporador:    g('f-incorporador'),
-    doc_incorporador:g('f-doc-incorporador'),
-    contato:         g('f-contato'),
-    tel:             g('f-tel'),
-    email:           g('f-email'),
-    n_unidades_raw:  g('f-n-unidades'),
-    prazo_raw:       g('f-prazo'),
-    area_lote_raw:   g('f-area-lote'),
-    area_equiv_raw:  g('f-area-equiv'),
-    data_hoje:       g('f-data-hoje') || dataHoje(),
-  };
-}
-
-// ── START ────────────────────────────────────────────────────────────────────
+// ── START ─────────────────────────────────────────────────────────────────────
 init();
 </script>
 </body>
