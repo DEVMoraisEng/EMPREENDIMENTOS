@@ -44,8 +44,7 @@ def get_numero(prop):
     """Extrai número de propriedade number."""
     if not prop:
         return None
-    v = prop.get("number")
-    return v
+    return prop.get("number")
 
 
 def get_data(prop):
@@ -60,7 +59,19 @@ def get_data(prop):
 
 def buscar_paginas():
     """Busca todas as páginas do banco Empreendimentos."""
-    url = f"https://api.notion.com/v1/databases/{NOTION_DB}/query"
+    # ── Diagnóstico ──────────────────────────────────────────────────────────
+    print(f"NOTION_TOKEN_EMP: {'OK (' + str(len(NOTION_TOKEN)) + ' chars)' if NOTION_TOKEN else 'NAO DEFINIDO <- ERRO'}")
+    print(f"NOTION_DB_EMP:    {NOTION_DB if NOTION_DB else 'NAO DEFINIDO <- ERRO'}")
+
+    # Remove prefixo ntn_ caso venha errado no secret
+    db_id = NOTION_DB
+    if db_id.startswith("ntn_"):
+        db_id = db_id[4:]
+        print(f"AVISO: ID tinha prefixo ntn_ removido automaticamente. Usando: {db_id}")
+
+    url = f"https://api.notion.com/v1/databases/{db_id}/query"
+    print(f"URL: {url}")
+
     resultados = []
     has_more = True
     cursor = None
@@ -70,13 +81,27 @@ def buscar_paginas():
         if cursor:
             body["start_cursor"] = cursor
         resp = requests.post(url, headers=HEADERS, json=body, timeout=30)
+        print(f"  HTTP {resp.status_code}")
         if resp.status_code != 200:
-            print(f"ERRO Notion {resp.status_code}: {resp.text[:300]}")
+            print(f"  ERRO: {resp.text[:500]}")
             break
         data = resp.json()
-        resultados.extend(data.get("results", []))
+        lote = data.get("results", [])
+        resultados.extend(lote)
+        print(f"  Paginas neste lote: {len(lote)}")
         has_more = data.get("has_more", False)
         cursor = data.get("next_cursor")
+
+    print(f"Total de paginas brutas: {len(resultados)}")
+
+    # Diagnóstico: mostra propriedades da 1ª página para conferir nomes
+    if resultados:
+        print("\nPropriedades da 1a pagina (para conferir nomes):")
+        for k, v in resultados[0].get("properties", {}).items():
+            print(f"  '{k}' -> tipo: {v.get('type','?')}")
+    else:
+        print("AVISO: Nenhuma pagina retornada.")
+        print("Verifique: 1) integração tem acesso ao banco  2) ID do banco correto (sem prefixo ntn_)")
 
     return resultados
 
@@ -85,9 +110,8 @@ def processar_pagina(page):
     """Converte uma página Notion para dict do data_emp.json."""
     props = page.get("properties", {})
 
-    # Nome do empreendimento (título da página)
+    # Nome do empreendimento (título da página — fallback automático)
     nome = get_texto(props.get("Nome") or props.get("Name") or props.get("NOME") or {})
-    # Fallback: título de qualquer campo tipo "title"
     if not nome:
         for v in props.values():
             if v.get("type") == "title":
@@ -101,64 +125,59 @@ def processar_pagina(page):
     complemento = get_texto(props.get("COMPLEMENTO") or props.get("Complemento") or {})
     cep         = get_texto(props.get("CEP") or {})
 
-    # Status da obra (campos select SIM/NÃO)
+    # Status da obra (select SIM/NÃO)
     def sim_nao(campo):
         v = get_select(props.get(campo) or {})
         return v.upper() == "SIM"
 
-    processo_iniciado     = sim_nao("PROCESSO INICIADO")
-    aprovacao_iniciada    = sim_nao("APROVAÇÃO INICIADA")
-    aprovacao_concluida   = sim_nao("APROVAÇÃO CONCLUÍDA")
-    obra_iniciada         = sim_nao("OBRA INICIADA")
-    obra_finalizada       = sim_nao("OBRA FINALIZADA")
+    processo_iniciado   = sim_nao("PROCESSO INICIADO")
+    aprovacao_iniciada  = sim_nao("APROVACAO INICIADA") or sim_nao("APROVAÇÃO INICIADA")
+    aprovacao_concluida = sim_nao("APROVACAO CONCLUIDA") or sim_nao("APROVAÇÃO CONCLUÍDA")
+    obra_iniciada       = sim_nao("OBRA INICIADA")
+    obra_finalizada     = sim_nao("OBRA FINALIZADA") or sim_nao("OBRA FINALZIADA")
 
-    # Datas dos status
-    inicio_processo       = get_data(props.get("INÍCIO DO PROCESSO") or {})
-    inicio_aprovacao      = get_data(props.get("INÍCIO DA APROVAÇÃO") or {})
-    termino_aprovacao     = get_data(props.get("TÉRMINO DA APROVAÇÃO") or {})
-    inicio_obras          = get_data(props.get("INÍCIO DAS OBRAS") or {})
-    termino_obras         = get_data(props.get("TÉRMINO DAS OBRAS") or {})
+    # Datas
+    inicio_processo   = get_data(props.get("INICIO DO PROCESSO")  or props.get("INÍCIO DO PROCESSO")  or {})
+    inicio_aprovacao  = get_data(props.get("INICIO DA APROVACAO") or props.get("INÍCIO DA APROVAÇÃO") or {})
+    termino_aprovacao = get_data(props.get("TERMINO DA APROVACAO")or props.get("TÉRMINO DA APROVAÇÃO") or {})
+    inicio_obras      = get_data(props.get("INICIO DAS OBRAS")    or props.get("INÍCIO DAS OBRAS")    or {})
+    termino_obras     = get_data(props.get("TERMINO DAS OBRAS")   or props.get("TÉRMINO DAS OBRAS")   or {})
 
     # Campos para preencher FRE
-    proponente            = get_texto(props.get("PROPONENTE") or {})
-    doc_proponente        = get_texto(props.get("DOC. PROPONENTE") or {})
-    construtora           = get_texto(props.get("CONSTRUTORA") or {})
-    doc_construtora       = get_texto(props.get("DOC. CONSTRUTORA") or {})
-    responsavel_tecnico   = get_texto(props.get("RESPONSÁVEL TÉCNICO") or {})
-    crea                  = get_texto(props.get("CREA") or {})
-    doc_responsavel       = get_texto(props.get("DOC. RESPONSÁVEL") or {})
-    incorporador          = get_texto(props.get("INCORPORADOR") or {})
-    doc_incorporador      = get_texto(props.get("DOC. INCORPORADOR") or {})
-    tel_contato           = get_texto(props.get("TEL. CONTATO") or {})
-    email                 = get_texto(props.get("EMAIL") or {})
-    n_unidades_v          = get_numero(props.get("Nº DE UNIDADES") or props.get("N DE UNIDADES") or {})
-    n_unidades            = int(n_unidades_v) if n_unidades_v is not None else ""
-    prazo_previsto_v      = get_numero(props.get("PRAZO PREVISTO") or {})
-    prazo_previsto        = int(prazo_previsto_v) if prazo_previsto_v is not None else ""
-    area_lote_v           = get_numero(props.get("ÁREA DO LOTE") or {})
-    area_lote             = area_lote_v if area_lote_v is not None else ""
-    area_equivalente_v    = get_numero(props.get("ÁREA EQUIVALENTE") or {})
-    area_equivalente      = area_equivalente_v if area_equivalente_v is not None else ""
+    proponente          = get_texto(props.get("PROPONENTE") or {})
+    doc_proponente      = get_texto(props.get("DOC. PROPONENTE") or {})
+    construtora         = get_texto(props.get("CONSTRUTORA") or {})
+    doc_construtora     = get_texto(props.get("DOC. CONSTRUTORA") or {})
+    responsavel_tecnico = get_texto(props.get("RESPONSAVEL TECNICO") or props.get("RESPONSÁVEL TÉCNICO") or {})
+    crea                = get_texto(props.get("CREA") or {})
+    doc_responsavel     = get_texto(props.get("DOC. RESPONSAVEL") or props.get("DOC. RESPONSÁVEL") or {})
+    incorporador        = get_texto(props.get("INCORPORADOR") or {})
+    doc_incorporador    = get_texto(props.get("DOC. INCORPORADOR") or {})
+    tel_contato         = get_texto(props.get("TEL. CONTATO") or props.get("TEL CONTATO") or {})
+    email               = get_texto(props.get("EMAIL") or {})
 
-    # Status calculado (para exibir no card)
+    n_unidades_v     = get_numero(props.get("N DE UNIDADES") or props.get("Nº DE UNIDADES") or props.get("N° DE UNIDADES") or {})
+    n_unidades       = int(n_unidades_v) if n_unidades_v is not None else ""
+    prazo_v          = get_numero(props.get("PRAZO PREVISTO") or {})
+    prazo_previsto   = int(prazo_v) if prazo_v is not None else ""
+    area_lote_v      = get_numero(props.get("AREA DO LOTE") or props.get("ÁREA DO LOTE") or {})
+    area_lote        = area_lote_v if area_lote_v is not None else ""
+    area_equiv_v     = get_numero(props.get("AREA EQUIVALENTE") or props.get("ÁREA EQUIVALENTE") or {})
+    area_equivalente = area_equiv_v if area_equiv_v is not None else ""
+
+    # Status calculado para o card
     if obra_finalizada:
-        status_label = "OBRA FINALIZADA"
-        status_cor   = "finalizada"
+        status_label = "OBRA FINALIZADA";  status_cor = "finalizada"
     elif obra_iniciada:
-        status_label = "OBRA INICIADA"
-        status_cor   = "obra"
+        status_label = "OBRA INICIADA";    status_cor = "obra"
     elif aprovacao_concluida:
-        status_label = "APROVAÇÃO CONCLUÍDA"
-        status_cor   = "aprovada"
+        status_label = "APROVAÇÃO CONCLUÍDA"; status_cor = "aprovada"
     elif aprovacao_iniciada:
-        status_label = "APROVAÇÃO INICIADA"
-        status_cor   = "aprovando"
+        status_label = "APROVAÇÃO INICIADA";  status_cor = "aprovando"
     elif processo_iniciado:
-        status_label = "PROCESSO INICIADO"
-        status_cor   = "processo"
+        status_label = "PROCESSO INICIADO";   status_cor = "processo"
     else:
-        status_label = "NÃO INICIADO"
-        status_cor   = "pendente"
+        status_label = "NÃO INICIADO";     status_cor = "pendente"
 
     return {
         "id":                    page["id"],
@@ -180,7 +199,6 @@ def processar_pagina(page):
         "termino_aprovacao":     termino_aprovacao,
         "inicio_obras":          inicio_obras,
         "termino_obras":         termino_obras,
-        # campos FRE
         "proponente":            proponente,
         "doc_proponente":        doc_proponente,
         "construtora":           construtora,
@@ -200,21 +218,24 @@ def processar_pagina(page):
 
 
 def main():
-    print("Buscando empreendimentos do Notion...")
+    print("=" * 60)
+    print("fetch_empreendimentos.py — Morais Engenharia")
+    print("=" * 60)
+
     paginas = buscar_paginas()
-    print(f"  {len(paginas)} páginas encontradas")
 
     empreendimentos = []
     for p in paginas:
         try:
             emp = processar_pagina(p)
-            if emp["nome"]:   # ignora páginas sem nome
+            if emp["nome"]:
                 empreendimentos.append(emp)
-                print(f"  ✓ {emp['nome']} — {emp['status_label']}")
+                print(f"  OK: {emp['nome']} — {emp['status_label']}")
+            else:
+                print(f"  IGNORADO: página sem nome (id={p.get('id','?')})")
         except Exception as ex:
-            print(f"  AVISO: erro ao processar página {p.get('id','?')}: {ex}")
+            print(f"  ERRO ao processar {p.get('id','?')}: {ex}")
 
-    # Ordena por nome
     empreendimentos.sort(key=lambda x: x["nome"].lower())
 
     saida = {
@@ -225,7 +246,9 @@ def main():
     with open("data_emp.json", "w", encoding="utf-8") as f:
         json.dump(saida, f, ensure_ascii=False, indent=2)
 
-    print(f"\n✓ data_emp.json gerado com {len(empreendimentos)} empreendimentos")
+    print(f"\n{'=' * 60}")
+    print(f"data_emp.json gerado: {len(empreendimentos)} empreendimento(s)")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
