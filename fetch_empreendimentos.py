@@ -183,71 +183,63 @@ def processar_pagina(page):
 # ── Gerar FRE preenchida (Python puro, sem SheetJS) ─────────────────────────
 
 def gerar_fre(emp):
-    """Lê FRE_v015.xls, preenche placeholders e salva como FRE_{nome}.xls"""
-    try:
-        import xlrd, xlwt
-        from xlutils.copy import copy as xl_copy
-    except ImportError:
-        print("  AVISO: xlrd/xlwt/xlutils não instalados — FRE não gerada")
-        return None
+    """
+    Gera FRE preenchida usando openpyxl + xlsx.
+    Preserva formatação, mesclagens e fórmulas de todas as abas.
+    """
+    from openpyxl import load_workbook
 
-    src = "FRE_v015.xls"
+    src = "FRE_v015.xlsx"
     if not os.path.exists(src):
         print(f"  AVISO: {src} não encontrado no repositório")
         return None
 
     hoje = date.today().strftime("%d/%m/%Y")
-    n_un = str(emp["n_unidades"]) if emp["n_unidades"] != "" else ""
+    n_un = emp["n_unidades"]
 
-    # Mapa: (linha 0-based, col 0-based) -> valor
-    mapa_celulas = {
-        (6,  1): emp["nome"],           # B7  — Nome empreendimento
-        (9,  1): emp["rua"],            # B10 — RUA
-        (9, 12): emp["complemento"],    # M10 — Complemento
-        (12, 1): emp["setor"],          # B13 — Setor/Bairro
-        (12, 8): emp["cidade"],         # I13 — Cidade
-        (12,13): emp["cep"],            # N13 — CEP
-        (15, 1): emp["proponente"],     # B16 — Proponente
-        (15,12): emp["doc_proponente"], # M16 — DOC Proponente
-        (18, 1): emp["construtora"],    # B19 — Construtora
-        (18,12): emp["doc_construtora"],# M19 — DOC Construtora
-        (21, 1): emp["responsavel_tecnico"], # B22 — RT
-        (21, 9): emp["crea"],           # J22 — CREA
-        (21,12): emp["doc_responsavel"],# M22 — DOC RT
-        (24, 1): emp["incorporador"],   # B25 — Incorporador
-        (24,12): emp["doc_incorporador"],# M25 — DOC Incorporador
-        (27, 1): emp["responsavel_tecnico"], # B28 — Contato
-        (27, 9): emp["tel_contato"],    # J28 — Tel
-        (27,12): emp["email"],          # M28 — Email
-        (58,13): emp["prazo_previsto"], # N59 — Prazo previsto
-        (65, 8): emp["area_lote"],      # I66 — Área lote
-        (66, 8): emp["area_equivalente"],# I67 — Área equiv
-        (222,2): emp["proponente"],     # C223 — Assinatura nome
-        (223,2): emp["doc_proponente"], # C224 — Assinatura CPF
-        (226,2): hoje,                  # C227 — Data
+    mapa = {
+        "B7":  emp["nome"],
+        "B10": emp["rua"],
+        "M10": emp["complemento"],
+        "B13": emp["setor"],
+        "I13": emp["cidade"],
+        "N13": emp["cep"],
+        "B16": emp["proponente"],
+        "M16": emp["doc_proponente"],
+        "B19": emp["construtora"],
+        "M19": emp["doc_construtora"],
+        "B22": emp["responsavel_tecnico"],
+        "J22": emp["crea"],
+        "M22": emp["doc_responsavel"],
+        "B25": emp["incorporador"],
+        "M25": emp["doc_incorporador"],
+        "B28": emp["responsavel_tecnico"],
+        "J28": emp["tel_contato"],
+        "M28": emp["email"],
+        "E36": n_un if n_un != "" else None,
+        "N59": emp["prazo_previsto"] if emp["prazo_previsto"] != "" else None,
+        "I66": emp["area_lote"] if emp["area_lote"] != "" else None,
+        "I67": emp["area_equivalente"] if emp["area_equivalente"] != "" else None,
+        "C227": hoje,
+        # C223 e C224 sao formulas =B16 e =M16 — nao sobrescrever
     }
 
-    # Nº de unidades — pode ser número ou string
-    if n_un:
-        try:    mapa_celulas[(35, 4)] = int(n_un)   # E36
-        except: mapa_celulas[(35, 4)] = n_un
-
-    rb  = xlrd.open_workbook(src, formatting_info=True)
-    wb  = xl_copy(rb)
-    ws  = wb.get_sheet(rb.sheet_names().index("FRE"))
-
-    for (r, c), val in mapa_celulas.items():
-        if val == "" or val is None: continue
-        ws.write(r, c, val)
-
-    # Substituição de {Nº UNIDADES} no texto da descrição (linha 40, col 1)
-    rb_sheet = rb.sheet_by_name("FRE")
-    texto_desc = rb_sheet.cell_value(40, 1)
-    if n_un and "{Nº UNIDADES}" in texto_desc:
-        ws.write(40, 1, texto_desc.replace("{Nº UNIDADES}", n_un))
-
     nome_safe = "".join(c for c in emp["nome"] if c.isalnum() or c in " _-").strip().replace(" ", "_")
-    out_path  = f"fre_{nome_safe}.xls"
+    out_path  = f"fre_{nome_safe}.xlsx"
+    shutil.copy2(src, out_path)
+
+    wb = load_workbook(out_path)
+    ws = wb["FRE"]
+
+    for cel, val in mapa.items():
+        if val is None or val == "":
+            continue
+        ws[cel].value = val
+
+    desc = ws["B41"].value or ""
+    if n_un != "" and "{Nº UNIDADES}" in str(desc):
+        ws["B41"].value = str(desc).replace("{Nº UNIDADES}", str(n_un))
+
     wb.save(out_path)
     print(f"  FRE gerada: {out_path}")
     return out_path
