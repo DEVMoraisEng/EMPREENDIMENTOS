@@ -1,11 +1,11 @@
 name: Atualizar dados Empreendimentos e publicar site
 
 on:
-  workflow_dispatch:   # disparado pelo cron-job.org
+  workflow_dispatch:
   push:
     branches: [main]
   schedule:
-    - cron: '0 */4 * * *'   # fallback — use cron-job.org como fonte primária
+    - cron: '0 */4 * * *'
 
 jobs:
   build-and-deploy:
@@ -26,9 +26,9 @@ jobs:
           python-version: "3.11"
 
       - name: Instalar dependências
-        run: pip install requests
+        run: pip install requests openpyxl
 
-      - name: Gerar data_emp.json
+      - name: Gerar data_emp.json e FREs preenchidas
         env:
           NOTION_TOKEN_EMP: ${{ secrets.NOTION_TOKEN_EMP }}
           NOTION_DB_EMP:    ${{ secrets.NOTION_DB_EMP }}
@@ -37,11 +37,15 @@ jobs:
       - name: Preparar pasta de publicação
         run: |
           mkdir -p dist
-          cp index.html          dist/
-          cp documentacoes.html  dist/
-          cp data_emp.json       dist/
-          cp FRE_v015.xls        dist/ 2>/dev/null || true
-          cp logo.png            dist/ 2>/dev/null || true
+          cp index.html         dist/
+          cp documentacoes.html dist/
+          cp data_emp.json      dist/
+          cp FRE_v015.xlsx       dist/ 2>/dev/null || true
+          cp logo.png           dist/ 2>/dev/null || true
+          # Copia FREs preenchidas (geradas pelo script)
+          for f in fre_*.xlsx; do
+            [ -f "$f" ] && cp "$f" dist/ && echo "Copiado: $f"
+          done
 
       - name: Commit data_emp.json
         run: |
@@ -49,12 +53,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data_emp.json
           if git diff --staged --quiet; then
-            echo "data_emp.json sem alterações — sem commit necessário"
+            echo "Sem alterações"
           else
             git commit -m "chore: atualizar data_emp.json [skip ci]"
             git pull --rebase origin main
             git push origin main
-            echo "data_emp.json atualizado"
           fi
 
       - name: Setup Pages
