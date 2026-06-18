@@ -369,7 +369,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
           <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar FRE preenchida</strong>
           Baixa a FRE preenchida gerada automaticamente com os dados do Notion. Formatação original preservada.
         </div>
-        <a class="btn-baixar-fre" href="FRE_v015.xls" download="FRE_v015.xls">⬇ Modelo original</a>
+        <a class="btn-baixar-fre" href="FRE_v015.xlsx" download="FRE_v015.xlsx">⬇ Modelo original</a>
         <a class="btn-gerar verde" id="btn-gerar-fre" href="#" download style="display:inline-block;text-align:center;text-decoration:none;pointer-events:none;opacity:.4">
           ⬇ Baixar FRE Preenchida
         </a>
@@ -455,7 +455,7 @@ function selecionarEmp() {
 
   // Configura botão de download da FRE gerada pelo servidor
   const nomeSafe = EMP_ATUAL.nome.replace(/[^a-zA-Z0-9À-ÿ \-_]/g, '').trim().replace(/\s+/g, '_');
-  const nomeArq  = `fre_${nomeSafe}.xls`;
+  const nomeArq  = `fre_${nomeSafe}.xlsx`;
   btn.href = nomeArq;
   btn.download = nomeArq;
   btn.style.pointerEvents = 'auto';
