@@ -27,7 +27,7 @@ NOTION_DB    = os.environ.get("NOTION_DB_EMP", "")
 
 # BD de Unidades — token e DB separados
 NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH",
-                  "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")
+                  "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")
 NOTION_DB_UH    = os.environ.get("NOTION_DB_UH",
                   "384c5ab532d3807193fbde7e1432bdba")
 
@@ -370,8 +370,8 @@ def gerar_carta_proposta(emp):
     except ImportError:
         print("  AVISO: python-docx não instalado"); return None
 
-    src = "CARTA_PROPOSTA.docx"
-    if not os.path.exists(src):
+    src = next((f for f in ["CARTA PROPOSTA.docx","CARTA_PROPOSTA.docx"] if os.path.exists(f)), None)
+    if not src:
         print(f"  AVISO: {src} não encontrado"); return None
 
     dia, mes, ano = data_extenso()
@@ -437,10 +437,8 @@ def gerar_memorial(emp, tipo):
         print("  AVISO: python-docx não instalado"); return None
 
     srcs = {
-        "HABITACAO":      ["MEMORIAL_DESCRITIVO_DE_HABITACAO.docx",
-                           "MEMORIAL_DESCRITIVO_DE_HABITACAO.doc"],
-        "INFRAESTRUTURA": ["MEMORIAL_DESCRITIVO_INFRAESTRUTURA.docx",
-                           "MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc"],
+        "HABITACAO":      ["MEMORIAL DESCRITIVO DE HABITACAO.docx","MEMORIAL DESCRITIVO DE HABITACAO.doc","MEMORIAL_DESCRITIVO_DE_HABITACAO.docx","MEMORIAL_DESCRITIVO_DE_HABITACAO.doc"],
+        "INFRAESTRUTURA": ["MEMORIAL DESCRITIVO INFRAESTRUTURA.docx","MEMORIAL DESCRITIVO INFRAESTRUTURA.doc","MEMORIAL_DESCRITIVO_INFRAESTRUTURA.docx","MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc"],
     }
     src = next((n for n in srcs.get(tipo, []) if os.path.exists(n)), None)
     if not src:
@@ -514,8 +512,8 @@ def gerar_quadros_abnt(emp, unidades):
     except ImportError:
         print("  AVISO: openpyxl não instalado"); return None
 
-    src = "QUADROS_ABNT.xlsx"
-    if not os.path.exists(src):
+    src = next((f for f in ["QUADROS ABNT.xlsx","QUADROS_ABNT.xlsx"] if os.path.exists(f)), None)
+    if not src:
         print(f"  AVISO: {src} não encontrado"); return None
 
     # Filtra unidades deste empreendimento e ordena pelo número (nome da página)
