@@ -29,6 +29,18 @@ NOTION_DB    = os.environ.get("NOTION_DB_EMP", "")
 NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH", "")
 NOTION_DB_UH    = os.environ.get("NOTION_DB_UH", "")
 
+# ── DEBUG TEMPORÁRIO — remover após confirmar token ──────────────────────────
+def _debug_token(nome, token):
+    if not token:
+        print(f"  DEBUG {nome}: VAZIO")
+    else:
+        print(f"  DEBUG {nome}: len={len(token)} inicio='{token[:8]}' fim='{token[-6:]}'")
+
+_debug_token("NOTION_TOKEN_EMP", NOTION_TOKEN)
+_debug_token("NOTION_TOKEN_UH",  NOTION_TOKEN_UH)
+_debug_token("NOTION_DB_UH",     NOTION_DB_UH)
+# ── FIM DEBUG ─────────────────────────────────────────────────────────────────
+
 def _headers(token):
     return {
         "Authorization": f"Bearer {token}",
