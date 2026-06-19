@@ -159,10 +159,10 @@ def processar_pagina(page):
     prazo_v = get_numero(get_prop(props, "PRAZO PREVISTO", "PRAZO", "Prazo Previsto"))
     prazo   = int(prazo_v) if prazo_v is not None else ""
 
-    area_lote_v  = get_numero(get_prop(props, "ÁREA DO LOTE", "AREA DO LOTE", "Área do Lote"))
+    area_lote_v  = get_numero(get_prop(props, "ÁREA LOTE", "ÁREA DO LOTE", "AREA LOTE", "AREA DO LOTE", "Área do Lote"))
     area_lote    = area_lote_v if area_lote_v is not None else ""
 
-    area_equiv_v = get_numero(get_prop(props, "ÁREA EQUIVALENTE", "AREA EQUIVALENTE", "Área Equivalente"))
+    area_equiv_v = get_numero(get_prop(props, "ÁREA EQUIVALENTE TOTAL", "ÁREA EQUIVALENTE", "AREA EQUIVALENTE TOTAL", "AREA EQUIVALENTE", "Área Equivalente"))
     area_equiv   = area_equiv_v if area_equiv_v is not None else ""
 
     valor_terreno_v = get_numero(get_prop(props, "VALOR DO TERRENO", "Valor do Terreno", "VALOR TERRENO"))
@@ -172,7 +172,7 @@ def processar_pagina(page):
     revisao   = int(revisao_v) if revisao_v is not None else 0
 
     proc  = sim_nao(props, "PROCESSO INICIADO", "PROCESSO INCIADO", "Processo Iniciado")
-    apri  = sim_nao(props, "APROVAÇÃO INICIADA", "APROVACAO INICIADA", "Aprovação Iniciada")
+    apri  = sim_nao(props, "APROVAÇÃO INICIADA", "APROVAÇÃO INCIADA", "APROVACAO INICIADA", "APROVACAO INCIADA", "Aprovação Iniciada")
     aprc  = sim_nao(props, "APROVAÇÃO CONCLUÍDA", "APROVACAO CONCLUIDA", "Aprovação Concluída")
     obra  = sim_nao(props, "OBRA INICIADA", "OBRA INCIADA", "Obra Iniciada")
     obraf = sim_nao(props, "OBRA FINALIZADA", "OBRA FINALZIADA", "Obra Finalizada")
