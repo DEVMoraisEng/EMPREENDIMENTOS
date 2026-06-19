@@ -41,21 +41,28 @@ jobs:
           cp documentacoes.html dist/
           cp data_emp.json dist/
           cp logo.png dist/ 2>/dev/null || true
-          # Copia todos os arquivos gerados (FRE, Carta, Memoriais, Quadros)
+
+          # Copia arquivos gerados pelo script (nomes com underscore, gerados pelo Python)
           find . -maxdepth 1 \( -name "FRE__*.xlsx" \
                                -o -name "CARTA_PROPOSTA__*.docx" \
                                -o -name "MEMORIAL_HABITACAO__*.docx" \
                                -o -name "MEMORIAL_INFRAESTRUTURA__*.docx" \
                                -o -name "QUADROS_ABNT__*.xlsx" \) \
                -exec cp {} dist/ \;
-          # Copia os modelos originais
-          cp FRE_v*.xlsx dist/ 2>/dev/null || true
-          cp CARTA_PROPOSTA.docx dist/ 2>/dev/null || true
-          cp MEMORIAL_DESCRITIVO_DE_HABITACAO.doc dist/ 2>/dev/null || true
-          cp MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc dist/ 2>/dev/null || true
-          cp QUADROS_ABNT.xlsx dist/ 2>/dev/null || true
-          # Copia manuais PDF (se existirem)
-          cp MANUAL_*.pdf dist/ 2>/dev/null || true
+
+          # Copia modelos originais renomeando espaços → underscores (alinha ao HTML)
+          cp "FRE_v015.xlsx"                           dist/FRE_v015.xlsx                           2>/dev/null || true
+          cp "CARTA PROPOSTA.docx"                     dist/CARTA_PROPOSTA.docx                     2>/dev/null || true
+          cp "MEMORIAL DESCRITIVO DE HABITACAO.doc"    dist/MEMORIAL_DESCRITIVO_DE_HABITACAO.doc    2>/dev/null || true
+          cp "MEMORIAL DESCRITIVO INFRAESTRUTURA.doc"  dist/MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc  2>/dev/null || true
+          cp "QUADROS ABNT.xlsx"                       dist/QUADROS_ABNT.xlsx                       2>/dev/null || true
+
+          # Copia manuais PDF renomeando espaços → underscores
+          cp "MANUAL FRE.pdf"                          dist/MANUAL_FRE.pdf                          2>/dev/null || true
+          cp "MANUAL CARTA PROPOSTA.pdf"               dist/MANUAL_CARTA_PROPOSTA.pdf               2>/dev/null || true
+          cp "MANUAL MEMORIAL HABITACAO.pdf"           dist/MANUAL_MEMORIAL_HABITACAO.pdf           2>/dev/null || true
+          cp "MANUAL MEMORIAL INFRAESTRUTURA.pdf"      dist/MANUAL_MEMORIAL_INFRAESTRUTURA.pdf      2>/dev/null || true
+
           echo "--- Conteúdo do dist/ ---"
           ls -lh dist/
 
