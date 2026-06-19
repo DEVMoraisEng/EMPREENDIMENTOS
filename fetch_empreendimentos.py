@@ -495,50 +495,27 @@ def gerar_memorial(emp, tipo):
 
 def gerar_quadros_abnt(emp, unidades):
     """
-    Gera o XLSX dos Quadros NBR 12.721 preenchido com dados do empreendimento
-    e das unidades do BD UNIDADES DO EMPREENDIMENTO.
+    Gera o XLSX dos Quadros NBR 12.721 preenchido com dados do empreendimento.
 
-    Lógica da CAPA:
-      - Template: linha 9 (1 linha por UH)
-      - Total:    linha 10 (ajustada para somar todas as UHs inseridas)
-      - Col B = FRAÇÃO N  | Col C = CASA N
-      - Col D = área construída (priv + comum)
-      - Col E = área descoberta (priv + comum)
-      - Col F = =SUM(E_n, D_n)   (Total)
-      - Col G = =F_n             (Fração Ideal Total m²)
-      - Col H = =SUM(G_n/G_TOTAL)  (Fração Ideal %)
+    Estratégia: NÃO insere linhas. Escreve nas linhas já existentes do template
+    para preservar todas as referências entre abas (QUADRO I, II, IV A, IV B...).
 
-    Lógica do QUADRO II:
-      - Template: linha 17 (1 linha por UH)
-      - Total:    linha 19
-      - Col B  = CASA 01
-      - Col C  = =CAPA!D_n  (área construída da CAPA)
-      - Col D  = =CAPA!E_n  (área descoberta da CAPA)
-      - Col F  = =SUM(C+D)  | Col G = =SUM(C+E)
-      - Col K  = =SUM(H+I)  | Col L = =SUM(H+J)
-      - Col M  = =SUM(G+L)
-      - Col N  = =CAPA!H_n  (coef. proporcionalidade = %)
-      - Col O  = =ROUND(N*QI!M39,2)
-      - Col P  = =ROUND(N*QI!N39,2)
-      - Col Q  = =ROUND(N*QI!O39,2)
-      - Col R  = =SUM(O+P)  | Col S = =SUM(O+Q)
-      - Col T  = =SUM(F+K+R) | Col U = =SUM(M+S)
-      - Col V  = 1 (quantidade sempre 1)
+    CAPA       — linha 9: totais agregados de todas as UHs (área construída e descoberta)
+    QUADRO I   — linha 16 (TÉRREO): área por unidade, coluna T = quantidade n
+    QUADRO II  — linhas 17..17+n-1: uma linha por UH (máx 2 no template padrão)
+    QUADRO IV  — referencia QUADRO II!B17/B18 diretamente; não mexer.
     """
     try:
         from openpyxl import load_workbook
-        from openpyxl.utils import get_column_letter
     except ImportError:
         print("  AVISO: openpyxl não instalado"); return None
 
     src = next((f for f in ["QUADROS ABNT.xlsx","QUADROS_ABNT.xlsx"] if os.path.exists(f)), None)
     if not src:
-        print(f"  AVISO: {src} não encontrado"); return None
+        print("  AVISO: QUADROS ABNT.xlsx não encontrado"); return None
 
-    # Filtra unidades deste empreendimento e ordena pelo número (nome da página)
+    # Filtra e ordena UHs deste empreendimento
     uhs = [u for u in unidades if u["nome_emp"].strip().upper() == emp["nome"].strip().upper()]
-
-    # Ordena pelo número da UH (conversão para int se possível)
     def sort_key(u):
         try: return int(u["uh_num"])
         except: return u["uh_num"]
@@ -550,91 +527,49 @@ def gerar_quadros_abnt(emp, unidades):
 
     print(f"  Quadros ABNT: {n} UH(s) para '{emp['nome']}'")
 
-    dia, mes, ano = data_extenso()
-    data_hoje_ext = f"{dia} de {mes} de {ano}"
-    hoje_fmt      = data_hoje_fmt()
+    hoje_fmt = data_hoje_fmt()
 
     out = nome_arquivo(emp, "QUADROS_ABNT", "xlsx")
     shutil.copy2(src, out)
-
     wb = load_workbook(out)
+
+    # ── Calcular totais agregados ─────────────────────────────────────────────
+    total_area_const = round(sum(u["area_const_priv"] + u["area_const_com"] for u in uhs), 2)
+    total_area_desc  = round(sum(u["area_desc_priv"]  + u["area_desc_com"]  for u in uhs), 2)
+    area_const_unit  = round(total_area_const / n, 2)
 
     # ── 1. CAPA ───────────────────────────────────────────────────────────────
     ws_capa = wb["CAPA"]
 
-    # Preenche campos de texto/data da CAPA
     loc_str = f"{emp['rua']}, {emp['complemento']}; {emp['setor']} - {emp['cidade']}"
     ws_capa["C3"] = loc_str
+
+    # Área do terreno em G10 (D4 = =G10 já está no template)
+    if emp.get("area_lote", "") != "":
+        ws_capa["G10"] = emp["area_lote"]
+
+    # Linha 9 — totais agregados (sem insert_rows)
+    ws_capa["B9"] = "TOTAL GERAL"
+    ws_capa["C9"] = "TODAS AS UNIDADES"
+    ws_capa["D9"] = total_area_const
+    ws_capa["E9"] = total_area_desc
+    ws_capa["F9"] = "=SUM(E9,D9)"
+    ws_capa["G9"] = "=F9"
+    ws_capa["H9"] = "=SUM(G9/G10)"
+
     ws_capa["B11"] = f"{emp['cidade']} , {hoje_fmt}"
     ws_capa["B14"] = emp["responsavel_tecnico"]
     ws_capa["B15"] = emp["crea"]
 
-    # Área do terreno: inserida diretamente em G10
-    # (D4 = =G10, então D4 ficará correto automaticamente)
-    if emp.get("area_lote", "") != "":
-        ws_capa["G10"] = emp["area_lote"]
-
-    # Linha de template original = linha 9 (índice 8)
-    # Linha de TOTAL original    = linha 10 (índice 9)
-    # Se n > 1: insere (n-1) linhas antes da linha 10, copiando o template
-
-    # Para trabalhar corretamente com openpyxl (não tem insert_rows no read):
-    # Vamos recarregar sem read_only para poder manipular
-    wb.close()
-    wb = load_workbook(out)
-    ws_capa = wb["CAPA"]
-
-    # Linha base das unidades (1-indexed no Excel)
-    CAPA_FIRST_ROW = 9
-    CAPA_TOTAL_ROW = 10  # original, antes de inserir
-
-    if n > 1:
-        # Insere (n-1) linhas em branco após a linha 9
-        ws_capa.insert_rows(CAPA_TOTAL_ROW, amount=n - 1)
-
-    total_row = CAPA_FIRST_ROW + n  # nova linha do TOTAL após inserção
-
-    # Preenche cada linha de UH
-    for i, uh in enumerate(uhs):
-        row = CAPA_FIRST_ROW + i
-        num = i + 1
-        area_const = uh["area_const_priv"] + uh["area_const_com"]
-        area_desc  = uh["area_desc_priv"]  + uh["area_desc_com"]
-
-        ws_capa.cell(row=row, column=2).value = f"FRAÇÃO {num}"
-        ws_capa.cell(row=row, column=3).value = f"CASA {num}"
-        ws_capa.cell(row=row, column=4).value = round(area_const, 2)
-        ws_capa.cell(row=row, column=5).value = round(area_desc, 2)
-        ws_capa.cell(row=row, column=6).value = f"=SUM(E{row},D{row})"
-        ws_capa.cell(row=row, column=7).value = f"=F{row}"
-        ws_capa.cell(row=row, column=8).value = f"=SUM(G{row}/G{total_row})"
-
-    # Atualiza linha TOTAL com somas dinâmicas
-    first = CAPA_FIRST_ROW
-    last  = CAPA_FIRST_ROW + n - 1
-    ws_capa.cell(row=total_row, column=2).value = "TOTAL"
-    ws_capa.cell(row=total_row, column=4).value = f"=SUM(D{first}:D{last})"
-    ws_capa.cell(row=total_row, column=5).value = f"=SUM(E{first}:E{last})"
-    ws_capa.cell(row=total_row, column=6).value = f"=SUM(F{first}:F{last})"
-    ws_capa.cell(row=total_row, column=7).value = f"=SUM(G{first}:G{last})"
-    ws_capa.cell(row=total_row, column=8).value = f"=SUM(H{first}:H{last})"
-
-    # Linha de data/assinatura: move para total_row + 1 e + 3/4
-    ws_capa.cell(row=total_row + 1, column=2).value = f"{emp['cidade']} , {hoje_fmt}"
-    ws_capa.cell(row=total_row + 3, column=2).value = "____________________________________________"
-    ws_capa.cell(row=total_row + 4, column=2).value = emp["responsavel_tecnico"]
-    ws_capa.cell(row=total_row + 5, column=2).value = emp["crea"]
-
     # ── 2. INFORMAÇÕES PRELIMINARES ───────────────────────────────────────────
     ws_ip = wb["INFORMAÇÕES PRELIMINARES"]
-
-    # Substitui placeholders de texto nas células
+    n_un_str = str(emp["n_unidades"]) if emp["n_unidades"] != "" else str(n)
     mapa_ip = {
-        "{IMCORPORADOR}":         emp["incorporador"],
-        "{DOC. INCORPORADOR}":    emp["doc_incorporador"],
-        "{NOME DO EMPREENDIMENTO}": emp["nome"],
-        "{Nº DE UNIDADES}":       str(n_un_str := (str(emp["n_unidades"]) if emp["n_unidades"] != "" else str(n))),
-        "{Nº UNIDADES}":          n_un_str,
+        "{IMCORPORADOR}":            emp["incorporador"],
+        "{DOC. INCORPORADOR}":       emp["doc_incorporador"],
+        "{NOME DO EMPREENDIMENTO}":  emp["nome"],
+        "{Nº DE UNIDADES}":          n_un_str,
+        "{Nº UNIDADES}":             n_un_str,
     }
     for row in ws_ip.iter_rows():
         for cell in row:
@@ -642,46 +577,35 @@ def gerar_quadros_abnt(emp, unidades):
                 v = cell.value
                 for k, val in mapa_ip.items():
                     v = v.replace(k, val)
-                # Data
-                if "=CAPA!B11" in v:
-                    cell.value = f"{emp['cidade']} , {hoje_fmt}"
-                elif v != cell.value:
+                if v != cell.value:
                     cell.value = v
 
-    # ── 3. QUADRO I — só preenche DATA HOJE ───────────────────────────────────
+    # ── 3. QUADRO I ───────────────────────────────────────────────────────────
     ws_q1 = wb["QUADRO I"]
     ws_q1["C10"] = hoje_fmt
 
-    # Linha TÉRREO (L16) col C = =CAPA!D10 já está como fórmula no template
-    # Ajusta para apontar para a nova linha total da CAPA
-    ws_q1["C16"] = f"=CAPA!D{total_row}"
+    # Linha 16 (TÉRREO): área construída total na col C, quantidade na col T
+    ws_q1["C16"] = total_area_const
+    ws_q1["T16"] = 1  # quantidade sempre 1 (totais já estão agregados)
 
-    # ── 4. QUADRO II — insere linhas por UH ───────────────────────────────────
+    # ── 4. QUADRO II — 1 linha por UH nas linhas existentes (17, 18...) ───────
     ws_q2 = wb["QUADRO II"]
-
-    # Template na linha 17, TOTAIS na linha 19 (linha 18 vazia no template original)
-    Q2_FIRST_ROW  = 17
-    Q2_TOTAIS_ROW = 19  # original
-
-    if n > 1:
-        ws_q2.insert_rows(Q2_TOTAIS_ROW, amount=n - 1)
-
-    q2_totais_row = Q2_FIRST_ROW + n
+    ws_q2["C10"] = hoje_fmt
 
     for i, uh in enumerate(uhs):
-        r    = Q2_FIRST_ROW + i
-        capa_r = CAPA_FIRST_ROW + i   # linha correspondente na CAPA
-        num  = i + 1
+        r = 17 + i  # linha 17 = UH1, 18 = UH2, etc.
+        area_const = round(uh["area_const_priv"] + uh["area_const_com"], 2)
+        area_desc  = round(uh["area_desc_priv"]  + uh["area_desc_com"],  2)
 
-        ws_q2.cell(row=r, column=2).value  = f"CASA {num:02d}"
-        ws_q2.cell(row=r, column=3).value  = f"=CAPA!D{capa_r}"   # col 20: Coberta Padrão
-        ws_q2.cell(row=r, column=4).value  = f"=CAPA!E{capa_r}"   # col 21: Descoberta
+        ws_q2.cell(row=r, column=2).value  = f"CASA {i+1:02d}"
+        ws_q2.cell(row=r, column=3).value  = area_const
+        ws_q2.cell(row=r, column=4).value  = area_desc
         ws_q2.cell(row=r, column=6).value  = f"=SUM(C{r}+D{r})"
         ws_q2.cell(row=r, column=7).value  = f"=SUM(C{r}+E{r})"
         ws_q2.cell(row=r, column=11).value = f"=SUM(H{r}+I{r})"
         ws_q2.cell(row=r, column=12).value = f"=SUM(H{r}+J{r})"
         ws_q2.cell(row=r, column=13).value = f"=SUM(G{r}+L{r})"
-        ws_q2.cell(row=r, column=14).value = f"=CAPA!H{capa_r}"   # col 31: Coef. %
+        ws_q2.cell(row=r, column=14).value = f"=SUM(G{r}/G19)"
         ws_q2.cell(row=r, column=15).value = f"=ROUND('QUADRO II'!N{r}*'QUADRO I'!$M$39,2)"
         ws_q2.cell(row=r, column=16).value = f"=ROUND('QUADRO II'!N{r}*'QUADRO I'!$N$39,2)"
         ws_q2.cell(row=r, column=17).value = f"=ROUND('QUADRO II'!N{r}*'QUADRO I'!$O$39,2)"
@@ -689,31 +613,24 @@ def gerar_quadros_abnt(emp, unidades):
         ws_q2.cell(row=r, column=19).value = f"=SUM(O{r}+Q{r})"
         ws_q2.cell(row=r, column=20).value = f"=SUM(F{r}+K{r}+R{r})"
         ws_q2.cell(row=r, column=21).value = f"=SUM(M{r}+S{r})"
-        ws_q2.cell(row=r, column=22).value = 1  # quantidade = sempre 1
+        ws_q2.cell(row=r, column=22).value = 1  # V = quantidade
 
-    # Linha TOTAIS do Q2
-    f_str = f"C{Q2_FIRST_ROW}:C{q2_totais_row - 1}"
-    def sumproduct(col_letter, first, last):
-        return f"=SUMPRODUCT({col_letter}{first}:{col_letter}{last},$V{first}:$V{last})"
-
-    cols_q2 = list("CDEFGHIJKLMNOPQRSTU")
-    ws_q2.cell(row=q2_totais_row, column=2).value = "TOTAIS"
-    for idx, c in enumerate(cols_q2, start=3):
-        ws_q2.cell(row=q2_totais_row, column=idx).value = \
-            sumproduct(c, Q2_FIRST_ROW, q2_totais_row - 1)
-    ws_q2.cell(row=q2_totais_row, column=22).value = \
-        f"=SUM(V{Q2_FIRST_ROW}:V{q2_totais_row - 1})"
-
-    # Linhas após TOTAIS (ÁREA REAL GLOBAL, OBSERVAÇÕES) — ajusta referências
-    ws_q2.cell(row=q2_totais_row + 1, column=6).value  = f"=T{q2_totais_row}"
-    ws_q2.cell(row=q2_totais_row + 1, column=18).value = f"=U{q2_totais_row}"
-
-    # Data no Q2
-    ws_q2["C10"] = hoje_fmt
+    # Atualiza TOTAIS do Q2 para cobrir todas as UHs escritas
+    primeiro = 17
+    ultimo   = 17 + n - 1
+    ws_q2["C19"] = f"=SUMPRODUCT(C{primeiro}:C{ultimo},$V{primeiro}:$V{ultimo})"
+    ws_q2["D19"] = f"=SUMPRODUCT(D{primeiro}:D{ultimo},$V{primeiro}:$V{ultimo})"
+    ws_q2["F19"] = f"=SUMPRODUCT(F{primeiro}:F{ultimo},$V{primeiro}:$V{ultimo})"
+    ws_q2["G19"] = f"=SUMPRODUCT(G{primeiro}:G{ultimo},$V{primeiro}:$V{ultimo})"
+    ws_q2["M19"] = f"=SUMPRODUCT(M{primeiro}:M{ultimo},$V{primeiro}:$V{ultimo})"
+    ws_q2["T19"] = f"=SUMPRODUCT(T{primeiro}:T{ultimo},$V{primeiro}:$V{ultimo})"
+    ws_q2["U19"] = f"=SUMPRODUCT(U{primeiro}:U{ultimo},$V{primeiro}:$V{ultimo})"
+    ws_q2["V19"] = f"=SUM(V{primeiro}:V{ultimo})"
 
     wb.save(out)
     print(f"  Quadros ABNT: {out}")
     return out
+
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
