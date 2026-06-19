@@ -495,13 +495,10 @@ def gerar_memorial(emp, tipo):
 
 def gerar_quadros_abnt(emp, unidades):
     """
-    Gera QUADROS_ABNT__<NOME>__RV<N>.xlsx preenchido com dados do Notion.
-
-    Estratégia:
-    - CAPA:     insert_rows antes do TOTAL para criar 1 linha por UH (FRAÇÃO N / CASA N)
-    - QUADRO II: insert_rows antes do TOTAIS para criar 1 linha por UH
-    - Estilo da linha template é copiado para cada linha nova
-    - QUADRO I/IV/V/VI/VII/VIII: referências automáticas do Excel se ajustam ao insert
+    Gera QUADROS_ABNT__<NOME>__RV<N>.xlsx.
+    - CAPA:      insert_rows na linha 18 (antes do TOTAL), n-1 vezes
+    - QUADRO II: deleta linha 18 vazia, depois insert_rows na linha 18, n vezes
+    - INF PRELIMINARES: substitui placeholders diretamente (G10/G11 referenciam CAPA deslocada)
     """
     try:
         from openpyxl import load_workbook
@@ -538,15 +535,15 @@ def gerar_quadros_abnt(emp, unidades):
         dst_cell.number_format = src_cell.number_format
 
     # ── 1. CAPA ───────────────────────────────────────────────────────────────
+    # Template: L9=UH1, L10=TOTAL, L11=data, L13=assinatura, L14=resp, L15=crea
+    # Inserir n-1 linhas na posição 10 (antes do TOTAL)
     ws_capa = wb["CAPA"]
 
-    loc_str = f"{emp['rua']}, {emp['complemento']}; {emp['setor']} - {emp['cidade']}"
-    ws_capa["C3"] = loc_str
+    ws_capa["C3"] = f"{emp['rua']}, {emp['complemento']}; {emp['setor']} - {emp['cidade']}"
 
-    CAPA_TPL   = 9   # linha template (1 UH)
-    CAPA_TOT   = 10  # linha TOTAL original
+    CAPA_TPL = 9    # linha da 1ª UH
+    CAPA_TOT = 10   # linha TOTAL (original)
 
-    # Insere n-1 linhas antes do TOTAL copiando o estilo do template
     if n > 1:
         ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
         h = ws_capa.row_dimensions[CAPA_TPL].height
@@ -557,9 +554,9 @@ def gerar_quadros_abnt(emp, unidades):
                               ws_capa.cell(row=nr,        column=col))
             ws_capa.row_dimensions[nr].height = h
 
-    total_row = CAPA_TPL + n   # linha TOTAL (deslocada pelo insert)
+    total_row = CAPA_TPL + n   # linha TOTAL após inserção
 
-    # Preenche cada linha de UH
+    # Preenche cada UH
     for i, uh in enumerate(uhs):
         r          = CAPA_TPL + i
         area_const = round(uh["area_const_priv"] + uh["area_const_com"], 2)
@@ -572,7 +569,7 @@ def gerar_quadros_abnt(emp, unidades):
         ws_capa.cell(row=r, column=7).value = f"=F{r}"
         ws_capa.cell(row=r, column=8).value = f"=SUM(G{r}/G{total_row})"
 
-    # Atualiza fórmulas da linha TOTAL
+    # TOTAL — fórmulas cobrindo todas as UHs
     first, last = CAPA_TPL, CAPA_TPL + n - 1
     ws_capa.cell(row=total_row, column=4).value = f"=SUM(D{first}:D{last})"
     ws_capa.cell(row=total_row, column=5).value = f"=SUM(E{first}:E{last})"
@@ -580,62 +577,95 @@ def gerar_quadros_abnt(emp, unidades):
     ws_capa.cell(row=total_row, column=7).value = f"=SUM(G{first}:G{last})"
     ws_capa.cell(row=total_row, column=8).value = f"=SUM(H{first}:H{last})"
 
-    # Data e assinatura (deslocadas pelo insert)
+    # Data e assinatura — substituir placeholders nas linhas deslocadas
+    # Após insert de n-1 linhas: data=total+1, assin=total+3, resp=total+4, crea=total+5
     data_row = total_row + 1
     resp_row = total_row + 3
     crea_row = total_row + 4
-    ws_capa.cell(row=data_row, column=2).value = f"{emp['cidade']} , {hoje_fmt}"
-    ws_capa.cell(row=resp_row, column=2).value = emp.get("responsavel_tecnico", "")
-    ws_capa.cell(row=crea_row, column=2).value = emp.get("crea", "")
+
+    for r in range(total_row + 1, total_row + 8):
+        for col in range(1, 10):
+            cell = ws_capa.cell(row=r, column=col)
+            if isinstance(cell.value, str):
+                v = (cell.value
+                     .replace("{CIDADE}", emp.get("cidade", ""))
+                     .replace("{DATA HOJE}", hoje_fmt)
+                     .replace("{RESPONSÁVEL TÉCNICO}", emp.get("responsavel_tecnico", ""))
+                     .replace("{CREA}", emp.get("crea", "")))
+                if v != cell.value:
+                    cell.value = v
 
     # ── 2. INFORMAÇÕES PRELIMINARES ───────────────────────────────────────────
     ws_ip = wb["INFORMAÇÕES PRELIMINARES"]
-    n_un_str = str(emp["n_unidades"]) if emp["n_unidades"] != "" else str(n)
+    n_un_str  = str(emp["n_unidades"]) if emp["n_unidades"] != "" else str(n)
     casas_str = f"CASA 01 A CASA {n:02d}" if n > 1 else "CASA 01"
+
+    # G10 e G11 referenciam CAPA!B14/B15 — que foram deslocados pelo insert_rows
+    # Substituir diretamente para garantir
+    ws_ip["G10"] = emp.get("responsavel_tecnico", "")
+    ws_ip["G11"] = emp.get("crea", "")
+
+    # Substituir placeholders de texto
     mapa_ip = {
-        "{IMCORPORADOR}":            emp.get("incorporador", ""),
-        "{DOC. INCORPORADOR}":       emp.get("doc_incorporador", ""),
-        "{NOME DO EMPREENDIMENTO}":  emp["nome"],
-        "{Nº DE UNIDADES}":          n_un_str,
-        "{Nº UNIDADES}":             n_un_str,
+        "{IMCORPORADOR}":           emp.get("incorporador", ""),
+        "{DOC. INCORPORADOR}":      emp.get("doc_incorporador", ""),
+        "{NOME DO EMPREENDIMENTO}": emp["nome"],
+        "{Nº DE UNIDADES}":         n_un_str,
     }
     for row in ws_ip.iter_rows():
         for cell in row:
-            if isinstance(cell.value, str):
+            if isinstance(cell.value, str) and "{" in cell.value:
                 v = cell.value
                 for k, val in mapa_ip.items():
-                    v = v.replace(k, val)
+                    v = v.replace(k, str(val) if val else "")
+                # Ajuste específico de G22: "N UNIDADES ( CASA 01 A N)"
+                if "CASA 01 A" in v:
+                    v = v.replace(f"CASA 01 A {n_un_str}", casas_str)
                 if v != cell.value:
                     cell.value = v
 
     # ── 3. QUADRO I ───────────────────────────────────────────────────────────
     ws_q1 = wb["QUADRO I"]
     ws_q1["C10"] = hoje_fmt
-    # C16 = TÉRREO recebe referência à soma de área construída da CAPA (total_row col D)
     ws_q1["C16"] = f"=CAPA!D{total_row}"
 
     # ── 4. QUADRO II ─────────────────────────────────────────────────────────
+    # Template: L17=CASA01, L18=VAZIA, L19=TOTAIS
+    # Problema anterior: insert_rows(19) deixava L18 vazia entre dados e TOTAIS
+    # Solução: apagar L18 (delete_rows) e inserir n linhas na posição 18
     ws_q2 = wb["QUADRO II"]
     ws_q2["C10"] = hoje_fmt
 
-    Q2_TPL  = 17   # linha template UH no QUADRO II
-    Q2_TOT  = 19   # linha TOTAIS original (linha 18 é vazia no template)
+    Q2_TPL   = 17   # linha CASA01 original
+    Q2_VAZIA = 18   # linha vazia do template — apagar antes de inserir
+    Q2_TOT   = 19   # linha TOTAIS original
 
-    if n > 1:
-        ws_q2.insert_rows(Q2_TOT, amount=n - 1)
-        h2 = ws_q2.row_dimensions[Q2_TPL].height
-        for i in range(1, n):
-            nr = Q2_TPL + i
+    # 1. Apagar a linha 18 vazia
+    ws_q2.delete_rows(Q2_VAZIA)
+    # Agora: L17=CASA01, L18=TOTAIS (subiu)
+
+    # 2. Inserir n linhas antes dos TOTAIS (que agora está na linha 18)
+    ws_q2.insert_rows(Q2_VAZIA, amount=n)
+    # Agora: L17=CASA01_orig, L18..17+n=novas, L18+n=TOTAIS
+
+    q2_totais = Q2_TPL + n + 1   # linha TOTAIS após operações
+
+    # Copiar estilo da linha 17 para as novas linhas
+    h2 = ws_q2.row_dimensions[Q2_TPL].height
+    for i in range(n):
+        nr = Q2_TPL + 1 + i   # linhas 18..17+n (a linha 17 original fica)
+        # Para a 1ª UH reutilizar a linha 17; para demais copiar estilo
+        if i == 0:
+            nr = Q2_TPL  # reutiliza linha 17 original
+        else:
             for col in range(1, 24):
                 copiar_estilo(ws_q2.cell(row=Q2_TPL, column=col),
                               ws_q2.cell(row=nr,      column=col))
             ws_q2.row_dimensions[nr].height = h2
 
-    q2_totais = Q2_TPL + n   # nova linha TOTAIS
-
-    for i in range(n):
         r      = Q2_TPL + i
-        capa_r = CAPA_TPL + i   # linha correspondente na CAPA (já deslocada)
+        capa_r = CAPA_TPL + i   # linha correspondente na CAPA
+
         ws_q2.cell(row=r, column=2).value  = f"CASA {i+1:02d}"
         ws_q2.cell(row=r, column=3).value  = f"=CAPA!D{capa_r}"
         ws_q2.cell(row=r, column=4).value  = f"=CAPA!E{capa_r}"
