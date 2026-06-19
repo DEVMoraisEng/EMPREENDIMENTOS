@@ -26,10 +26,8 @@ NOTION_TOKEN = os.environ.get("NOTION_TOKEN_EMP", "")
 NOTION_DB    = os.environ.get("NOTION_DB_EMP", "")
 
 # BD de Unidades — token e DB separados
-NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH",
-                  "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")
-NOTION_DB_UH    = os.environ.get("NOTION_DB_UH",
-                  "384c5ab532d3807193fbde7e1432bdba")
+NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH", "")
+NOTION_DB_UH    = os.environ.get("NOTION_DB_UH", "")
 
 def _headers(token):
     return {
@@ -437,8 +435,8 @@ def gerar_memorial(emp, tipo):
         print("  AVISO: python-docx não instalado"); return None
 
     srcs = {
-        "HABITACAO":      ["MEMORIAL DESCRITIVO DE HABITACAO.docx","MEMORIAL DESCRITIVO DE HABITACAO.doc","MEMORIAL_DESCRITIVO_DE_HABITACAO.docx","MEMORIAL_DESCRITIVO_DE_HABITACAO.doc"],
-        "INFRAESTRUTURA": ["MEMORIAL DESCRITIVO INFRAESTRUTURA.docx","MEMORIAL DESCRITIVO INFRAESTRUTURA.doc","MEMORIAL_DESCRITIVO_INFRAESTRUTURA.docx","MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc"],
+        "HABITACAO":      ["MEMORIAL DESCRITIVO DE HABITACAO.docx","MEMORIAL_DESCRITIVO_DE_HABITACAO.docx","MEMORIAL DESCRITIVO DE HABITACAO.doc","MEMORIAL_DESCRITIVO_DE_HABITACAO.doc"],
+        "INFRAESTRUTURA": ["MEMORIAL DESCRITIVO INFRAESTRUTURA.docx","MEMORIAL_DESCRITIVO_INFRAESTRUTURA.docx","MEMORIAL DESCRITIVO INFRAESTRUTURA.doc","MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc"],
     }
     src = next((n for n in srcs.get(tipo, []) if os.path.exists(n)), None)
     if not src:
