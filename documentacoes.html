@@ -42,31 +42,30 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 @keyframes spin{to{transform:rotate(360deg)}}
 .load-txt{font-size:14px;font-weight:600;color:var(--text3)}
 
-/* MAIN LAYOUT */
+/* MAIN */
 .main{padding:28px 28px 56px;max-width:1000px;margin:0 auto}
 
-/* SELETOR */
-.sel-blk{background:var(--branco);border:1.5px solid var(--border);border-radius:10px;
-         padding:20px 24px;margin-bottom:24px;box-shadow:0 2px 8px rgba(41,87,120,.06)}
-.sel-blk-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;
-               color:var(--text3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px}
-.sel-emp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sel-emp{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;
-         padding:10px 16px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text);
-         cursor:pointer;outline:none;flex:1;min-width:260px;transition:border-color .15s}
-.sel-emp:focus{border-color:var(--teal)}
+/* BANNER DO EMPREENDIMENTO (sem seletor — vem pela URL) */
+.emp-banner{background:var(--azul-esc);border-radius:10px;padding:18px 24px;margin-bottom:24px;
+            display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.emp-banner-info{}
+.emp-banner-nome{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;
+                 color:#fff;margin-bottom:3px}
+.emp-banner-det{font-size:12px;color:var(--teal);font-weight:600;text-transform:uppercase;
+                letter-spacing:.07em}
+.emp-banner-rv{background:rgba(143,220,210,.18);border:1px solid rgba(143,220,210,.3);
+               border-radius:20px;padding:5px 14px;font-family:'Barlow Condensed',sans-serif;
+               font-size:13px;font-weight:800;color:var(--teal);letter-spacing:.06em;
+               white-space:nowrap}
 
-/* INFO DO EMPREENDIMENTO */
-.emp-info{background:var(--azul-esc);border-radius:10px;padding:18px 24px;margin-bottom:24px;
-          display:none}
-.emp-info.visible{display:block}
-.emp-info-nome{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;
-               color:#fff;margin-bottom:4px}
-.emp-info-det{font-size:12px;color:var(--teal);font-weight:600;text-transform:uppercase;
-              letter-spacing:.07em}
+/* ERRO (sem ?id=) */
+.err-blk{background:var(--branco);border:1.5px solid var(--border);border-radius:10px;
+         padding:48px 32px;text-align:center;color:var(--text4)}
+.err-blk strong{display:block;font-family:'Barlow Condensed',sans-serif;font-size:22px;
+                color:var(--text3);margin-bottom:6px}
 
-/* ── GRID DE CARDS DE DOCUMENTOS ── */
-.docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;
+/* GRID DE CARDS DE DOCUMENTOS */
+.docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;
            margin-bottom:28px}
 
 .doc-card{background:var(--branco);border:2px solid var(--border);border-radius:12px;
@@ -75,12 +74,13 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
           box-shadow:0 2px 8px rgba(41,87,120,.05);position:relative;overflow:hidden}
 .doc-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
                   background:var(--border);border-radius:12px 0 0 12px;transition:background .18s}
-.doc-card:hover{border-color:var(--teal);transform:translateY(-2px);
+.doc-card:hover:not(.disabled){border-color:var(--teal);transform:translateY(-2px);
                 box-shadow:0 6px 20px rgba(41,87,120,.12)}
-.doc-card:hover::before{background:var(--teal)}
+.doc-card:hover:not(.disabled)::before{background:var(--teal)}
 .doc-card.active{border-color:var(--azul);background:var(--azul);
                  box-shadow:0 6px 20px rgba(41,87,120,.22)}
 .doc-card.active::before{background:var(--teal)}
+.doc-card.disabled{opacity:.42;cursor:not-allowed}
 
 .doc-card-icon{font-size:26px;line-height:1}
 .doc-card-nome{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;
@@ -93,13 +93,14 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
                 padding:3px 8px;border-radius:20px;background:rgba(42,157,92,.12);
                 color:#1a6b40;display:inline-flex;align-items:center;gap:4px;width:fit-content}
 .doc-card.active .doc-card-badge{background:rgba(143,220,210,.2);color:var(--teal)}
+.badge-breve{background:rgba(90,128,153,.1)!important;color:var(--text3)!important}
 
-/* ── PAINEL DO DOCUMENTO ABERTO ── */
+/* PAINEL DO DOCUMENTO */
 .doc-panel{display:none;animation:fadeSlide .2s ease}
 .doc-panel.active{display:block}
 @keyframes fadeSlide{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── FORM CARD ── */
+/* FORM CARD (colapsável) */
 .form-card{background:var(--branco);border:1.5px solid var(--border);border-radius:10px;
            overflow:hidden;box-shadow:0 2px 10px rgba(41,87,120,.07);margin-bottom:20px}
 .form-card-hdr{padding:14px 20px;background:var(--bg3);border-bottom:2px solid var(--border);
@@ -117,8 +118,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
                        stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}
 .form-card.collapsed .form-card-toggle svg{transform:rotate(-90deg)}
 .form-card-hdr:hover .form-card-toggle{background:var(--azul-esc)}
-
-.form-body{padding:20px 24px;transition:all .2s}
+.form-body{padding:20px 24px}
 .form-card.collapsed .form-body{display:none}
 
 /* GRID DE CAMPOS */
@@ -127,7 +127,6 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 .fg-2{grid-template-columns:1fr 1fr}
 .fg-3{grid-template-columns:1fr 1fr 1fr}
 .fg-4{grid-template-columns:1fr 1fr 1fr 1fr}
-
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;
              letter-spacing:.07em;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
@@ -138,8 +137,6 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal)}
 .field textarea{resize:vertical;min-height:80px;line-height:1.45}
 .field .hint{font-size:10.5px;color:var(--text4);margin-top:2px}
-
-/* STATUS DOS CAMPOS */
 .field input.notion-fill{border-color:rgba(42,157,92,.5);background:rgba(42,157,92,.04)}
 .field input.vazio-warn{border-color:rgba(244,160,40,.6);background:rgba(244,160,40,.04)}
 .field-tag{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
@@ -158,21 +155,20 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 .action-bar{background:var(--branco);border:1.5px solid var(--border);border-radius:10px;
             padding:18px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
             box-shadow:0 2px 8px rgba(41,87,120,.06)}
-.action-lbl{font-size:13px;color:var(--text3);flex:1;min-width:200px;line-height:1.45}
+.action-lbl{font-size:13px;color:var(--text3);flex:1;min-width:180px;line-height:1.45}
 .btn-gerar{padding:11px 28px;border-radius:8px;border:none;
            font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;
            letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
            background:var(--azul);color:#fff;transition:background .15s;white-space:nowrap}
 .btn-gerar:hover{background:var(--azul-esc)}
-.btn-gerar:disabled{opacity:.5;cursor:not-allowed}
 .btn-gerar.verde{background:var(--verde)}
 .btn-gerar.verde:hover{background:#1f7a44}
-.btn-baixar-fre{padding:11px 20px;border-radius:8px;border:1.5px solid var(--border);
-                font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;
-                letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
-                background:var(--branco);color:var(--text3);transition:all .15s;
-                text-decoration:none;white-space:nowrap}
-.btn-baixar-fre:hover{border-color:var(--teal);color:var(--azul)}
+.btn-sec{padding:11px 20px;border-radius:8px;border:1.5px solid var(--border);
+         font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;
+         letter-spacing:.06em;text-transform:uppercase;cursor:pointer;
+         background:var(--branco);color:var(--text3);transition:all .15s;
+         text-decoration:none;white-space:nowrap;display:inline-block;text-align:center}
+.btn-sec:hover{border-color:var(--teal);color:var(--azul)}
 
 /* LOG */
 #log-fre{display:none;background:var(--azul-esc);border-radius:8px;padding:14px 18px;
@@ -183,34 +179,15 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 #log-fre .err{color:#e74c3c}
 #log-fre .warn{color:#f4a028}
 
-/* MODAL */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;
-          align-items:center;justify-content:center}
-.modal-bg.visible{display:flex}
-.modal{background:var(--branco);border-radius:14px;padding:32px 36px;max-width:460px;width:90%;
-       text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.2)}
-.modal-icon{font-size:48px;margin-bottom:14px}
-.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;
-             color:var(--azul-esc);margin-bottom:8px}
-.modal-txt{font-size:14px;color:var(--text3);line-height:1.55;margin-bottom:22px}
-.modal-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-
-/* PLACEHOLDER */
-.placeholder-msg{text-align:center;padding:60px 20px;color:var(--text4)}
-.placeholder-msg strong{display:block;font-family:'Barlow Condensed',sans-serif;
-                        font-size:22px;color:var(--text3);margin-bottom:6px}
-
 /* MOBILE */
 @media(max-width:680px){
   .main{padding:16px 14px 40px}
   .fg-2,.fg-3,.fg-4{grid-template-columns:1fr}
   .action-bar{flex-direction:column;align-items:stretch}
-  .btn-gerar,.btn-baixar-fre{text-align:center}
+  .btn-gerar,.btn-sec{text-align:center}
   .docs-grid{grid-template-columns:1fr 1fr}
 }
-@media(max-width:400px){
-  .docs-grid{grid-template-columns:1fr}
-}
+@media(max-width:400px){.docs-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -221,7 +198,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 </div>
 
 <div class="header">
-  <a class="hdr-back" href="index.html">← Voltar</a>
+  <a class="hdr-back" href="index.html" id="hdr-back-link">← Voltar</a>
   <img src="logo.png" alt="Morais" class="hdr-logo" onerror="this.style.display='none'">
   <div class="hdr-info">
     <div class="hdr-sup">Empreendimentos · Controle</div>
@@ -231,34 +208,26 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 
 <div class="main">
 
-  <!-- SELETOR -->
-  <div class="sel-blk">
-    <div class="sel-blk-title">Empreendimento</div>
-    <div class="sel-emp-row">
-      <select class="sel-emp" id="sel-emp" onchange="selecionarEmp()">
-        <option value="">— Selecione um empreendimento —</option>
-      </select>
+  <!-- BANNER DO EMPREENDIMENTO -->
+  <div class="emp-banner" id="emp-banner" style="display:none">
+    <div class="emp-banner-info">
+      <div class="emp-banner-nome" id="emp-nome-hdr">—</div>
+      <div class="emp-banner-det" id="emp-det-hdr">—</div>
     </div>
+    <div class="emp-banner-rv" id="emp-rv-badge">RV 0</div>
   </div>
 
-  <!-- INFO -->
-  <div class="emp-info" id="emp-info">
-    <div class="emp-info-nome" id="emp-nome-hdr">—</div>
-    <div class="emp-info-det" id="emp-det-hdr">—</div>
+  <!-- ERRO: sem ?id= -->
+  <div class="err-blk" id="err-sem-id" style="display:none">
+    <strong>Empreendimento não identificado</strong>
+    Acesse esta página pelo botão "Documentações" no card do empreendimento.
   </div>
 
-  <!-- PLACEHOLDER -->
-  <div id="placeholder" class="placeholder-msg">
-    <strong>Selecione um empreendimento</strong>
-    Escolha acima para ver os documentos disponíveis
-  </div>
-
-  <!-- ÁREA DE DOCUMENTOS -->
+  <!-- ÁREA PRINCIPAL -->
   <div id="docs-area" style="display:none">
 
     <!-- GRID DE CARDS -->
-    <div class="docs-grid" id="docs-grid">
-
+    <div class="docs-grid">
       <div class="doc-card active" id="card-fre" onclick="abrirDoc('fre')">
         <div class="doc-card-icon">📋</div>
         <div class="doc-card-nome">FRE</div>
@@ -266,35 +235,38 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="doc-card-badge">✓ Disponível</div>
       </div>
 
-      <!-- Cards de documentos futuros — remova o atributo "disabled" quando implementar -->
-      <div class="doc-card" id="card-memorial" onclick="abrirDoc('memorial')" style="opacity:.45;cursor:not-allowed" title="Em breve">
-        <div class="doc-card-icon">📄</div>
-        <div class="doc-card-nome">Memorial</div>
-        <div class="doc-card-desc">Memorial Descritivo do Projeto</div>
-        <div class="doc-card-badge" style="background:rgba(90,128,153,.1);color:var(--text3)">Em breve</div>
+      <div class="doc-card" id="card-carta" onclick="abrirDoc('carta')">
+        <div class="doc-card-icon">📝</div>
+        <div class="doc-card-nome">Carta Proposta</div>
+        <div class="doc-card-desc">Proposta de Financiamento CEF</div>
+        <div class="doc-card-badge">✓ Disponível</div>
       </div>
 
-      <div class="doc-card" id="card-qci" onclick="abrirDoc('qci')" style="opacity:.45;cursor:not-allowed" title="Em breve">
+      <div class="doc-card" id="card-memorial-hab" onclick="abrirDoc('memorial-hab')">
+        <div class="doc-card-icon">🏠</div>
+        <div class="doc-card-nome">Memorial Hab.</div>
+        <div class="doc-card-desc">Memorial Descritivo — Habitação</div>
+        <div class="doc-card-badge">✓ Disponível</div>
+      </div>
+
+      <div class="doc-card" id="card-memorial-infra" onclick="abrirDoc('memorial-infra')">
+        <div class="doc-card-icon">🔧</div>
+        <div class="doc-card-nome">Memorial Infra</div>
+        <div class="doc-card-desc">Memorial Descritivo — Infraestrutura</div>
+        <div class="doc-card-badge">✓ Disponível</div>
+      </div>
+
+      <div class="doc-card disabled" id="card-quadros" title="Em breve">
         <div class="doc-card-icon">📊</div>
-        <div class="doc-card-nome">QCI</div>
-        <div class="doc-card-desc">Quadro de Composição do Imóvel</div>
-        <div class="doc-card-badge" style="background:rgba(90,128,153,.1);color:var(--text3)">Em breve</div>
+        <div class="doc-card-nome">Quadros ABNT</div>
+        <div class="doc-card-desc">NBR 12.721 — Áreas e Frações</div>
+        <div class="doc-card-badge badge-breve">Em breve</div>
       </div>
-
-      <div class="doc-card" id="card-cnd" onclick="abrirDoc('cnd')" style="opacity:.45;cursor:not-allowed" title="Em breve">
-        <div class="doc-card-icon">🏛️</div>
-        <div class="doc-card-nome">CND</div>
-        <div class="doc-card-desc">Certidão Negativa de Débitos</div>
-        <div class="doc-card-badge" style="background:rgba(90,128,153,.1);color:var(--text3)">Em breve</div>
-      </div>
-
     </div>
 
-    <!-- ── PAINEL FRE ── -->
+    <!-- ═══ PAINEL FRE ═══ -->
     <div class="doc-panel active" id="panel-fre">
-
-      <!-- SEÇÃO: IDENTIFICAÇÃO (colapsável) -->
-      <div class="form-card" id="card-identificacao">
+      <div class="form-card collapsed" id="card-identificacao">
         <div class="form-card-hdr" onclick="toggleCard('identificacao')">
           <div class="form-card-left">
             <div class="form-card-title">Identificação do Empreendimento</div>
@@ -305,330 +277,442 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
           </div>
         </div>
         <div class="form-body">
-
           <div class="sec-title">Dados Gerais</div>
           <div class="fg fg-1">
-            <div class="field">
-              <label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-nome" placeholder="Nome do empreendimento">
-            </div>
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-nome" placeholder="Nome do empreendimento"></div>
           </div>
           <div class="fg fg-2">
-            <div class="field">
-              <label>Endereço (RUA) <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-rua" placeholder="Logradouro conforme matrícula">
-            </div>
-            <div class="field">
-              <label>Complemento <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-complemento" placeholder="Complemento">
-            </div>
+            <div class="field"><label>Endereço (RUA) <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-rua" placeholder="Logradouro conforme matrícula"></div>
+            <div class="field"><label>Complemento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-complemento" placeholder="Complemento"></div>
           </div>
           <div class="fg fg-4">
-            <div class="field">
-              <label>Bairro / Setor <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-setor" placeholder="Bairro">
-            </div>
-            <div class="field">
-              <label>Município <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-cidade" placeholder="Cidade">
-            </div>
-            <div class="field">
-              <label>UF</label>
-              <input type="text" id="f-uf" value="GO" placeholder="GO">
-            </div>
-            <div class="field">
-              <label>CEP <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-cep" placeholder="00000-000">
-            </div>
+            <div class="field"><label>Bairro / Setor <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-setor" placeholder="Bairro"></div>
+            <div class="field"><label>Município <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-cidade" placeholder="Cidade"></div>
+            <div class="field"><label>UF</label>
+              <input type="text" id="f-uf" value="GO" placeholder="GO"></div>
+            <div class="field"><label>CEP <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-cep" placeholder="00000-000"></div>
           </div>
-
           <div class="sec-div"></div>
           <div class="sec-title">Partes Envolvidas</div>
           <div class="fg fg-2">
-            <div class="field">
-              <label>Proponente <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-proponente" placeholder="Nome do proponente">
-            </div>
-            <div class="field">
-              <label>CNPJ/CPF Proponente <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-doc-proponente" placeholder="00.000.000/0001-00">
-            </div>
+            <div class="field"><label>Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-proponente"></div>
+            <div class="field"><label>CNPJ/CPF Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-doc-proponente"></div>
           </div>
           <div class="fg fg-2">
-            <div class="field">
-              <label>Construtora <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-construtora" placeholder="Nome da construtora">
-            </div>
-            <div class="field">
-              <label>CNPJ/CPF Construtora <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-doc-construtora" placeholder="00.000.000/0001-00">
-            </div>
+            <div class="field"><label>Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-construtora"></div>
+            <div class="field"><label>CNPJ/CPF Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-doc-construtora"></div>
           </div>
           <div class="fg fg-3">
-            <div class="field">
-              <label>Responsável Técnico <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-resp-tecnico" placeholder="Nome do RT">
-            </div>
-            <div class="field">
-              <label>CAU/CREA <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-crea" placeholder="CREA-GO 000000">
-            </div>
-            <div class="field">
-              <label>CPF/CNPJ Responsável <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-doc-resp" placeholder="000.000.000-00">
-            </div>
+            <div class="field"><label>Responsável Técnico <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-resp-tecnico"></div>
+            <div class="field"><label>CAU/CREA <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-crea"></div>
+            <div class="field"><label>CPF/CNPJ Responsável <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-doc-resp"></div>
           </div>
           <div class="fg fg-2">
-            <div class="field">
-              <label>Incorporador <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-incorporador" placeholder="Nome do incorporador">
-            </div>
-            <div class="field">
-              <label>CPF/CNPJ Incorporador <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-doc-incorporador" placeholder="00.000.000/0001-00">
-            </div>
+            <div class="field"><label>Incorporador <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-incorporador"></div>
+            <div class="field"><label>CPF/CNPJ Incorporador <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-doc-incorporador"></div>
           </div>
           <div class="fg fg-3">
-            <div class="field">
-              <label>Nome para Contato <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-contato" placeholder="Nome do contato">
-            </div>
-            <div class="field">
-              <label>Telefone <span class="field-tag tag-notion">Notion</span></label>
-              <input type="text" id="f-tel" placeholder="(62) 99999-9999">
-            </div>
-            <div class="field">
-              <label>E-mail <span class="field-tag tag-notion">Notion</span></label>
-              <input type="email" id="f-email" placeholder="contato@empresa.com.br">
-            </div>
+            <div class="field"><label>Nome para Contato <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-contato"></div>
+            <div class="field"><label>Telefone <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-tel"></div>
+            <div class="field"><label>E-mail <span class="field-tag tag-notion">Notion</span></label>
+              <input type="email" id="f-email"></div>
           </div>
-
           <div class="sec-div"></div>
           <div class="sec-title">Características do Empreendimento</div>
           <div class="fg fg-3">
-            <div class="field">
-              <label>Nº de Unidades (Casas) <span class="field-tag tag-notion">Notion</span></label>
-              <input type="number" id="f-n-unidades" placeholder="62" min="1">
-            </div>
-            <div class="field">
-              <label>Prazo Previsto (meses) <span class="field-tag tag-notion">Notion</span></label>
-              <input type="number" id="f-prazo" placeholder="24" min="1">
-            </div>
-            <div class="field">
-              <label>Data do Preenchimento</label>
-              <input type="text" id="f-data-hoje" readonly placeholder="Preenchida automaticamente">
-              <span class="hint">Gerada automaticamente na data de exportação</span>
-            </div>
+            <div class="field"><label>Nº de Unidades <span class="field-tag tag-notion">Notion</span></label>
+              <input type="number" id="f-n-unidades" min="1"></div>
+            <div class="field"><label>Prazo Previsto (meses) <span class="field-tag tag-notion">Notion</span></label>
+              <input type="number" id="f-prazo" min="1"></div>
+            <div class="field"><label>Data do Preenchimento</label>
+              <input type="text" id="f-data-hoje" readonly>
+              <span class="hint">Gerada automaticamente na exportação</span></div>
           </div>
-          <div class="fg fg-2">
-            <div class="field">
-              <label>Área do Lote (m²) <span class="field-tag tag-notion">Notion</span></label>
-              <input type="number" id="f-area-lote" placeholder="15981.31" step="0.01">
-            </div>
-            <div class="field">
-              <label>Área Equivalente (m²) <span class="field-tag tag-notion">Notion</span></label>
-              <input type="number" id="f-area-equiv" placeholder="0.00" step="0.01">
-            </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Área do Lote (m²) <span class="field-tag tag-notion">Notion</span></label>
+              <input type="number" id="f-area-lote" step="0.01"></div>
+            <div class="field"><label>Área Equivalente (m²) <span class="field-tag tag-notion">Notion</span></label>
+              <input type="number" id="f-area-equiv" step="0.01"></div>
+            <div class="field"><label>Valor do Terreno (R$) <span class="field-tag tag-notion">Notion</span></label>
+              <input type="number" id="f-valor-terreno" step="0.01">
+              <span class="hint">Campo VALOR DO TERRENO do Notion</span></div>
           </div>
-
         </div>
-      </div><!-- fim card-identificacao -->
+      </div>
 
-      <!-- BARRA DE AÇÃO -->
       <div class="action-bar">
         <div class="action-lbl">
           <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar FRE preenchida</strong>
-          Baixa a FRE preenchida gerada automaticamente com os dados do Notion. Formatação original preservada.
+          Baixa a FRE com os dados do Notion. Formatação original preservada.
         </div>
-        <a class="btn-baixar-fre" href="FRE_v015.xlsx" download="FRE_v015.xlsx">⬇ Modelo original</a>
-        <a class="btn-gerar verde" id="btn-gerar-fre" href="#" download style="display:inline-block;text-align:center;text-decoration:none;pointer-events:none;opacity:.4">
-          ⬇ Baixar FRE Preenchida
+        <a class="btn-sec" href="FRE_v015.xlsx" download>⬇ Modelo original</a>
+        <a class="btn-sec" id="btn-manual-fre" href="MANUAL_FRE.pdf" target="_blank">📖 Manual</a>
+        <a class="btn-gerar verde" id="btn-gerar-fre" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar FRE
         </a>
       </div>
       <div id="log-fre"></div>
-
-    </div><!-- fim panel-fre -->
-
-    <!-- PAINEIS FUTUROS (ocultos) -->
-    <div class="doc-panel" id="panel-memorial">
-      <div class="form-card"><div class="form-card-hdr" style="cursor:default">
-        <div class="form-card-left"><div class="form-card-title">Memorial Descritivo</div>
-        <div class="form-card-sub">Em desenvolvimento</div></div>
-      </div></div>
     </div>
-    <div class="doc-panel" id="panel-qci">
-      <div class="form-card"><div class="form-card-hdr" style="cursor:default">
-        <div class="form-card-left"><div class="form-card-title">QCI</div>
-        <div class="form-card-sub">Em desenvolvimento</div></div>
-      </div></div>
+
+    <!-- ═══ PAINEL CARTA PROPOSTA ═══ -->
+    <div class="doc-panel" id="panel-carta">
+      <div class="form-card collapsed" id="card-carta-id">
+        <div class="form-card-hdr" onclick="toggleCard('carta-id')">
+          <div class="form-card-left">
+            <div class="form-card-title">Dados da Carta Proposta</div>
+            <div class="form-card-sub">Os campos são preenchidos automaticamente do Notion</div>
+          </div>
+          <div class="form-card-toggle">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="form-body">
+          <div class="sec-title">Identificação CEF</div>
+          <div class="fg fg-2">
+            <div class="field"><label>Agência CEF <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="f-agencia" placeholder="Agência/PA da CEF"></div>
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fc-nome" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fc-construtora" readonly></div>
+            <div class="field"><label>CNPJ Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fc-doc-construtora" readonly></div>
+          </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Nº de Unidades <span class="field-tag tag-notion">Notion</span></label>
+              <input type="number" id="fc-n-unidades" readonly></div>
+            <div class="field"><label>Prazo Total de Obra (meses) <span class="field-tag tag-notion">Notion</span></label>
+              <input type="number" id="fc-prazo" readonly></div>
+            <div class="field"><label>Valor do Terreno (R$) <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fc-valor-terreno" readonly></div>
+          </div>
+          <div class="sec-div"></div>
+          <div class="sec-title">Data e Assinatura</div>
+          <div class="fg fg-3">
+            <div class="field"><label>Cidade</label>
+              <input type="text" id="fc-cidade" readonly></div>
+            <div class="field"><label>Data de Preenchimento</label>
+              <input type="text" id="fc-data" readonly>
+              <span class="hint">Preenchida automaticamente pelo script Python</span></div>
+            <div class="field"><label>Responsável Técnico <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fc-resp" readonly></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <div class="action-lbl">
+          <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar Carta Proposta</strong>
+          Baixa o Word preenchido com os dados do Notion. Gerado pelo script Python no servidor.
+        </div>
+        <a class="btn-sec" href="CARTA_PROPOSTA.docx" download>⬇ Modelo original</a>
+        <a class="btn-sec" id="btn-manual-carta" href="MANUAL_CARTA_PROPOSTA.pdf" target="_blank">📖 Manual</a>
+        <a class="btn-gerar verde" id="btn-gerar-carta" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar Carta
+        </a>
+      </div>
     </div>
-    <div class="doc-panel" id="panel-cnd">
-      <div class="form-card"><div class="form-card-hdr" style="cursor:default">
-        <div class="form-card-left"><div class="form-card-title">CND</div>
-        <div class="form-card-sub">Em desenvolvimento</div></div>
-      </div></div>
+
+    <!-- ═══ PAINEL MEMORIAL HABITAÇÃO ═══ -->
+    <div class="doc-panel" id="panel-memorial-hab">
+      <div class="form-card collapsed" id="card-mem-hab-id">
+        <div class="form-card-hdr" onclick="toggleCard('mem-hab-id')">
+          <div class="form-card-left">
+            <div class="form-card-title">Dados do Memorial — Habitação</div>
+            <div class="form-card-sub">Identificação preenchida automaticamente pelo Notion</div>
+          </div>
+          <div class="form-card-toggle">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="form-body">
+          <div class="sec-title">Identificação</div>
+          <div class="fg fg-2">
+            <div class="field"><label>Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fh-proponente" readonly></div>
+            <div class="field"><label>Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fh-construtora" readonly></div>
+          </div>
+          <div class="fg fg-1">
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fh-nome" readonly></div>
+          </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Endereço <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fh-rua" readonly></div>
+            <div class="field"><label>Complemento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fh-complemento" readonly></div>
+            <div class="field"><label>Setor / Cidade <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fh-setor-cidade" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Data de Emissão</label>
+              <input type="text" id="fh-data" readonly>
+              <span class="hint">Gerada automaticamente na exportação</span></div>
+            <div class="field"><label>Responsável Técnico / CREA <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fh-resp-crea" readonly></div>
+          </div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <div class="action-lbl">
+          <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar Memorial — Habitação</strong>
+          Baixa o Word com a identificação preenchida. Corpo do documento mantido original.
+        </div>
+        <a class="btn-sec" href="MEMORIAL_DESCRITIVO_DE_HABITACAO.doc" download>⬇ Modelo original</a>
+        <a class="btn-sec" href="MANUAL_MEMORIAL_HABITACAO.pdf" target="_blank">📖 Manual</a>
+        <a class="btn-gerar verde" id="btn-gerar-mem-hab" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar Memorial Hab.
+        </a>
+      </div>
+    </div>
+
+    <!-- ═══ PAINEL MEMORIAL INFRAESTRUTURA ═══ -->
+    <div class="doc-panel" id="panel-memorial-infra">
+      <div class="form-card collapsed" id="card-mem-infra-id">
+        <div class="form-card-hdr" onclick="toggleCard('mem-infra-id')">
+          <div class="form-card-left">
+            <div class="form-card-title">Dados do Memorial — Infraestrutura</div>
+            <div class="form-card-sub">Identificação preenchida automaticamente pelo Notion</div>
+          </div>
+          <div class="form-card-toggle">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="form-body">
+          <div class="sec-title">Identificação</div>
+          <div class="fg fg-2">
+            <div class="field"><label>Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fi-proponente" readonly></div>
+            <div class="field"><label>Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fi-construtora" readonly></div>
+          </div>
+          <div class="fg fg-1">
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fi-nome" readonly></div>
+          </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Endereço <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fi-rua" readonly></div>
+            <div class="field"><label>Complemento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fi-complemento" readonly></div>
+            <div class="field"><label>Setor / Cidade <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fi-setor-cidade" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Data de Emissão</label>
+              <input type="text" id="fi-data" readonly></div>
+            <div class="field"><label>Responsável Técnico / CREA <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fi-resp-crea" readonly></div>
+          </div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <div class="action-lbl">
+          <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar Memorial — Infraestrutura</strong>
+          Baixa o Word com a identificação preenchida. Corpo do documento mantido original.
+        </div>
+        <a class="btn-sec" href="MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc" download>⬇ Modelo original</a>
+        <a class="btn-sec" href="MANUAL_MEMORIAL_INFRAESTRUTURA.pdf" target="_blank">📖 Manual</a>
+        <a class="btn-gerar verde" id="btn-gerar-mem-infra" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar Memorial Infra
+        </a>
+      </div>
     </div>
 
   </div><!-- fim #docs-area -->
-</div><!-- fim .main -->
-
-<!-- MODAL -->
-<div class="modal-bg" id="modal">
-  <div class="modal">
-    <div class="modal-icon">✅</div>
-    <div class="modal-title">FRE gerada com sucesso!</div>
-    <div class="modal-txt" id="modal-txt">O download foi iniciado automaticamente.</div>
-    <div class="modal-btns">
-      <button class="btn-gerar" onclick="document.getElementById('modal').classList.remove('visible')">Fechar</button>
-    </div>
-  </div>
 </div>
 
 <script>
 // ── DADOS ────────────────────────────────────────────────────────────────────
-let DATA_EMP = [];
-let EMP_ATUAL = null;
+let EMP = null;
 
-function getParam(k) {
-  return new URLSearchParams(window.location.search).get(k) || '';
+function getParam(k){ return new URLSearchParams(window.location.search).get(k)||''; }
+
+function dataHoje(){
+  return new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function dataExtenso(){
+  const meses=['janeiro','fevereiro','março','abril','maio','junho',
+               'julho','agosto','setembro','outubro','novembro','dezembro'];
+  const h=new Date();
+  return `${h.getDate()} de ${meses[h.getMonth()]} de ${h.getFullYear()}`;
+}
+function brl(v){
+  if(v===''||v==null) return '';
+  return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function nomeArquivo(emp, prefixo, ext){
+  const rv = emp.revisao ?? 0;
+  const safe = emp.nome.replace(/[^a-zA-ZÀ-ÿ0-9 _-]/g,'').trim().replace(/\s+/g,'_');
+  return `${prefixo}__${safe}__RV${rv}.${ext}`;
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
-async function init() {
-  try {
+async function init(){
+  const id = getParam('id');
+  if(!id){
+    document.getElementById('err-sem-id').style.display = 'block';
+    document.getElementById('loading').classList.add('hidden');
+    return;
+  }
+
+  try{
     const resp = await fetch(`data_emp.json?t=${Date.now()}`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const json = await resp.json();
-    DATA_EMP = json.empreendimentos || [];
+    const lista = json.empreendimentos || [];
+    EMP = lista.find(e => e.id === id) || null;
 
-    const sel = document.getElementById('sel-emp');
-    DATA_EMP.forEach(emp => {
-      const opt = document.createElement('option');
-      opt.value = emp.id;
-      opt.textContent = emp.nome + (emp.cidade ? ` · ${emp.cidade}` : '');
-      sel.appendChild(opt);
-    });
-
-    const idParam = getParam('id');
-    if (idParam) { sel.value = idParam; selecionarEmp(); }
-
-  } catch(e) {
+    if(!EMP){
+      document.getElementById('err-sem-id').style.display = 'block';
+    } else {
+      mostrarEmpreendimento();
+      document.getElementById('docs-area').style.display = 'block';
+    }
+  } catch(e){
     console.error(e);
-    logFre('err', `Erro ao carregar dados: ${e.message}`);
+    document.getElementById('err-sem-id').style.display = 'block';
   } finally {
     document.getElementById('loading').classList.add('hidden');
   }
 }
 
-// ── SELECIONAR EMPREENDIMENTO ────────────────────────────────────────────────
-function selecionarEmp() {
-  const id = document.getElementById('sel-emp').value;
-  const btn = document.getElementById('btn-gerar-fre');
+// ── EXIBIR EMPREENDIMENTO ────────────────────────────────────────────────────
+function mostrarEmpreendimento(){
+  const emp = EMP;
+  const rv = emp.revisao ?? 0;
 
-  if (!id) {
-    EMP_ATUAL = null;
-    document.getElementById('emp-info').classList.remove('visible');
-    document.getElementById('docs-area').style.display = 'none';
-    document.getElementById('placeholder').style.display = 'block';
-    btn.style.pointerEvents = 'none'; btn.style.opacity = '.4';
-    return;
-  }
-
-  EMP_ATUAL = DATA_EMP.find(e => e.id === id) || null;
-  if (!EMP_ATUAL) return;
-
-  document.getElementById('emp-nome-hdr').textContent = EMP_ATUAL.nome;
-  const det = [EMP_ATUAL.setor, EMP_ATUAL.cidade, EMP_ATUAL.status_label].filter(Boolean).join(' · ');
+  // Banner
+  document.getElementById('emp-nome-hdr').textContent = emp.nome;
+  const det = [emp.setor, emp.cidade, emp.status_label].filter(Boolean).join(' · ');
   document.getElementById('emp-det-hdr').textContent = det;
-  document.getElementById('emp-info').classList.add('visible');
+  document.getElementById('emp-rv-badge').textContent = `RV ${rv}`;
+  document.getElementById('emp-banner').style.display = 'flex';
 
-  preencherFormulario(EMP_ATUAL);
-
-  const nomeSafe = EMP_ATUAL.nome.replace(/[^a-zA-Z0-9À-ÿ \-_]/g, '').trim().replace(/\s+/g, '_');
-  const nomeArq  = `fre_${nomeSafe}.xlsx`;
-  btn.href = nomeArq;
-  btn.download = nomeArq;
-  btn.style.pointerEvents = 'auto';
-  btn.style.opacity = '1';
-
-  document.getElementById('placeholder').style.display = 'none';
-  document.getElementById('docs-area').style.display = 'block';
-
-  const url = new URL(window.location);
-  url.searchParams.set('id', id);
-  window.history.replaceState({}, '', url);
-}
-
-// ── PREENCHER FORMULÁRIO ─────────────────────────────────────────────────────
-function preencherFormulario(emp) {
-  const campos = {
-    'f-nome':            emp.nome,
-    'f-rua':             emp.rua,
-    'f-complemento':     emp.complemento,
-    'f-setor':           emp.setor,
-    'f-cidade':          emp.cidade,
-    'f-cep':             emp.cep,
-    'f-proponente':      emp.proponente,
-    'f-doc-proponente':  emp.doc_proponente,
-    'f-construtora':     emp.construtora,
-    'f-doc-construtora': emp.doc_construtora,
-    'f-resp-tecnico':    emp.responsavel_tecnico,
-    'f-crea':            emp.crea,
-    'f-doc-resp':        emp.doc_responsavel,
-    'f-incorporador':    emp.incorporador,
-    'f-doc-incorporador':emp.doc_incorporador,
-    'f-contato':         emp.responsavel_tecnico,
-    'f-tel':             emp.tel_contato,
-    'f-email':           emp.email,
-    'f-n-unidades':      emp.n_unidades !== '' ? String(emp.n_unidades) : '',
-    'f-prazo':           emp.prazo_previsto !== '' ? String(emp.prazo_previsto) : '',
-    'f-area-lote':       emp.area_lote !== '' ? String(emp.area_lote) : '',
-    'f-area-equiv':      emp.area_equivalente !== '' ? String(emp.area_equivalente) : '',
-  };
-
+  // FRE
+  preencherCampo('f-nome',          emp.nome);
+  preencherCampo('f-rua',           emp.rua);
+  preencherCampo('f-complemento',   emp.complemento);
+  preencherCampo('f-setor',         emp.setor);
+  preencherCampo('f-cidade',        emp.cidade);
+  preencherCampo('f-cep',           emp.cep);
+  preencherCampo('f-proponente',    emp.proponente);
+  preencherCampo('f-doc-proponente',emp.doc_proponente);
+  preencherCampo('f-construtora',   emp.construtora);
+  preencherCampo('f-doc-construtora',emp.doc_construtora);
+  preencherCampo('f-resp-tecnico',  emp.responsavel_tecnico);
+  preencherCampo('f-crea',          emp.crea);
+  preencherCampo('f-doc-resp',      emp.doc_responsavel);
+  preencherCampo('f-incorporador',  emp.incorporador);
+  preencherCampo('f-doc-incorporador',emp.doc_incorporador);
+  preencherCampo('f-contato',       emp.responsavel_tecnico);
+  preencherCampo('f-tel',           emp.tel_contato);
+  preencherCampo('f-email',         emp.email);
+  preencherCampo('f-n-unidades',    emp.n_unidades !== '' ? String(emp.n_unidades) : '');
+  preencherCampo('f-prazo',         emp.prazo_previsto !== '' ? String(emp.prazo_previsto) : '');
+  preencherCampo('f-area-lote',     emp.area_lote !== '' ? String(emp.area_lote) : '');
+  preencherCampo('f-area-equiv',    emp.area_equivalente !== '' ? String(emp.area_equivalente) : '');
+  preencherCampo('f-valor-terreno', emp.valor_terreno !== '' ? String(emp.valor_terreno) : '');
   document.getElementById('f-data-hoje').value = dataHoje();
 
-  Object.entries(campos).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.value = val || '';
-    el.classList.remove('notion-fill', 'vazio-warn');
-    el.classList.add(val ? 'notion-fill' : 'vazio-warn');
+  // Botão FRE
+  const btnFre = document.getElementById('btn-gerar-fre');
+  btnFre.href    = nomeArquivo(emp,'FRE','xlsx');
+  btnFre.download= nomeArquivo(emp,'FRE','xlsx');
+  btnFre.style.pointerEvents='auto'; btnFre.style.opacity='1';
+
+  // Carta Proposta
+  document.getElementById('f-agencia').value     = emp.agencia || '';
+  document.getElementById('fc-nome').value        = emp.nome;
+  document.getElementById('fc-construtora').value = emp.construtora;
+  document.getElementById('fc-doc-construtora').value = emp.doc_construtora;
+  document.getElementById('fc-n-unidades').value  = emp.n_unidades !== '' ? emp.n_unidades : '';
+  document.getElementById('fc-prazo').value       = emp.prazo_previsto !== '' ? emp.prazo_previsto : '';
+  document.getElementById('fc-valor-terreno').value = brl(emp.valor_terreno);
+  document.getElementById('fc-cidade').value      = emp.cidade;
+  document.getElementById('fc-data').value        = dataExtenso();
+  document.getElementById('fc-resp').value        = emp.responsavel_tecnico;
+  const btnCarta = document.getElementById('btn-gerar-carta');
+  btnCarta.href    = nomeArquivo(emp,'CARTA_PROPOSTA','docx');
+  btnCarta.download= nomeArquivo(emp,'CARTA_PROPOSTA','docx');
+  btnCarta.style.pointerEvents='auto'; btnCarta.style.opacity='1';
+
+  // Memorial Habitação
+  document.getElementById('fh-proponente').value    = emp.proponente;
+  document.getElementById('fh-construtora').value   = emp.construtora;
+  document.getElementById('fh-nome').value          = emp.nome;
+  document.getElementById('fh-rua').value           = emp.rua;
+  document.getElementById('fh-complemento').value   = emp.complemento;
+  document.getElementById('fh-setor-cidade').value  = [emp.setor, emp.cidade].filter(Boolean).join(' · ');
+  document.getElementById('fh-data').value          = dataExtenso();
+  document.getElementById('fh-resp-crea').value     = [emp.responsavel_tecnico, emp.crea].filter(Boolean).join(' · ');
+  const btnMemHab = document.getElementById('btn-gerar-mem-hab');
+  btnMemHab.href    = nomeArquivo(emp,'MEMORIAL_HABITACAO','docx');
+  btnMemHab.download= nomeArquivo(emp,'MEMORIAL_HABITACAO','docx');
+  btnMemHab.style.pointerEvents='auto'; btnMemHab.style.opacity='1';
+
+  // Memorial Infraestrutura
+  document.getElementById('fi-proponente').value    = emp.proponente;
+  document.getElementById('fi-construtora').value   = emp.construtora;
+  document.getElementById('fi-nome').value          = emp.nome;
+  document.getElementById('fi-rua').value           = emp.rua;
+  document.getElementById('fi-complemento').value   = emp.complemento;
+  document.getElementById('fi-setor-cidade').value  = [emp.setor, emp.cidade].filter(Boolean).join(' · ');
+  document.getElementById('fi-data').value          = dataExtenso();
+  document.getElementById('fi-resp-crea').value     = [emp.responsavel_tecnico, emp.crea].filter(Boolean).join(' · ');
+  const btnMemInfra = document.getElementById('btn-gerar-mem-infra');
+  btnMemInfra.href    = nomeArquivo(emp,'MEMORIAL_INFRAESTRUTURA','docx');
+  btnMemInfra.download= nomeArquivo(emp,'MEMORIAL_INFRAESTRUTURA','docx');
+  btnMemInfra.style.pointerEvents='auto'; btnMemInfra.style.opacity='1';
+}
+
+// ── CAMPO COM STATUS DE PREENCHIMENTO ────────────────────────────────────────
+function preencherCampo(id, val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.value = val || '';
+  el.classList.remove('notion-fill','vazio-warn');
+  el.classList.add(val ? 'notion-fill' : 'vazio-warn');
+}
+
+// ── TOGGLE CARD ──────────────────────────────────────────────────────────────
+function toggleCard(cardId){
+  document.getElementById('card-'+cardId).classList.toggle('collapsed');
+}
+
+// ── TROCAR DOCUMENTO ─────────────────────────────────────────────────────────
+const DOCS = ['fre','carta','memorial-hab','memorial-infra'];
+function abrirDoc(doc){
+  DOCS.forEach(d=>{
+    const c = document.getElementById('card-'+d);
+    const p = document.getElementById('panel-'+d);
+    if(c) c.classList.toggle('active', d===doc);
+    if(p) p.classList.toggle('active', d===doc);
   });
-
-  // Garantir que o card de identificação começa expandido ao mudar empreendimento
-  const card = document.getElementById('card-identificacao');
-  card.classList.remove('collapsed');
-}
-
-function dataHoje() {
-  return new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
-}
-
-// ── ALTERNAR CARD (colapsar/expandir) ────────────────────────────────────────
-function toggleCard(cardId) {
-  const card = document.getElementById('card-' + cardId);
-  card.classList.toggle('collapsed');
-}
-
-// ── ABRIR DOCUMENTO (troca de card ativo) ────────────────────────────────────
-function abrirDoc(doc) {
-  // Só ativa se disponível (os "em breve" têm pointer-events:none via style inline)
-  const cards = ['fre', 'memorial', 'qci', 'cnd'];
-
-  cards.forEach(d => {
-    const card  = document.getElementById('card-' + d);
-    const panel = document.getElementById('panel-' + d);
-    if (card)  card.classList.toggle('active', d === doc);
-    if (panel) panel.classList.toggle('active', d === doc);
-  });
-}
-
-// ── LOG ──────────────────────────────────────────────────────────────────────
-function logFre(tipo, msg) {
-  const el = document.getElementById('log-fre');
-  el.classList.add('visible');
-  el.innerHTML += `<span class="${tipo}">${msg}</span>\n`;
 }
 
 // ── START ─────────────────────────────────────────────────────────────────────

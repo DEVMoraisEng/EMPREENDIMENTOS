@@ -75,7 +75,16 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 
 .card-body{padding:18px 20px 14px;flex:1}
 .card-nome{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;
-           color:var(--azul-esc);letter-spacing:.02em;line-height:1.15;margin-bottom:6px}
+           color:var(--azul-esc);letter-spacing:.02em;line-height:1.15;margin-bottom:4px}
+
+/* LINHA DE REVISÃO — NOVA */
+.card-rv{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.rv-badge{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+          padding:2px 7px;border-radius:4px;
+          background:rgba(41,87,120,.1);color:var(--text3);
+          border:1px solid var(--border);letter-spacing:.04em}
+.rv-badge.rv-zero{background:rgba(244,160,40,.1);color:#9a6005;border-color:rgba(244,160,40,.3)}
+
 .card-loc{font-size:12px;color:var(--text3);font-weight:600;text-transform:uppercase;
           letter-spacing:.06em;margin-bottom:12px}
 .card-loc span{color:var(--text4)}
@@ -176,21 +185,27 @@ const PROG_ITEMS = [
 ];
 
 function renderCard(emp) {
-  // Barra de progresso dos status
   const prog = PROG_ITEMS.map(p =>
     `<div class="prog-item ${emp[p.campo] ? 'ok' : 'off'}">
       <span class="dot"></span>${p.label}
     </div>`
   ).join('');
 
-  // Localização
   const loc = [emp.setor, emp.cidade].filter(Boolean).join(' · ');
+
+  // Badge de revisão
+  const rv = emp.revisao ?? 0;
+  const rvClass = rv === 0 ? 'rv-badge rv-zero' : 'rv-badge';
+  const rvLabel = `RV ${rv}`;
 
   return `
   <div class="card" data-id="${emp.id}">
     <div class="card-status-bar ${emp.status_cor}"></div>
     <div class="card-body">
       <div class="card-nome">${emp.nome}</div>
+      <div class="card-rv">
+        <span class="${rvClass}">${rvLabel}</span>
+      </div>
       <div class="card-loc">${loc || '<span>Localização não informada</span>'}</div>
       <div class="card-prog">${prog}</div>
       <span class="card-badge badge-${emp.status_cor}">${emp.status_label}</span>
@@ -227,7 +242,6 @@ function abrirAba(aba, id) {
   if (aba === 'documentacoes') {
     window.location.href = `documentacoes.html?id=${encodeURIComponent(id)}`;
   } else {
-    // Páginas futuras (aprovação e andamento)
     alert(`A aba "${aba.charAt(0).toUpperCase() + aba.slice(1)}" está em desenvolvimento.\nEstará disponível em breve.`);
   }
 }
@@ -239,7 +253,6 @@ async function init() {
     const json = await resp.json();
     DATA = json.empreendimentos || [];
 
-    // Atualiza timestamp
     if (json.updated_at) {
       const d = new Date(json.updated_at);
       document.getElementById('updated-at').textContent =
@@ -247,7 +260,6 @@ async function init() {
         hour:'2-digit',minute:'2-digit'});
     }
 
-    // Popula filtro de cidades
     const cidades = [...new Set(DATA.map(e => e.cidade).filter(Boolean))].sort();
     const selCidade = document.getElementById('filtro-cidade');
     cidades.forEach(c => {
