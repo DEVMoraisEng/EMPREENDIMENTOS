@@ -256,11 +256,11 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="doc-card-badge">✓ Disponível</div>
       </div>
 
-      <div class="doc-card disabled" id="card-quadros" title="Em breve">
+      <div class="doc-card" id="card-quadros" onclick="abrirDoc('quadros')">
         <div class="doc-card-icon">📊</div>
         <div class="doc-card-nome">Quadros ABNT</div>
         <div class="doc-card-desc">NBR 12.721 — Áreas e Frações</div>
-        <div class="doc-card-badge badge-breve">Em breve</div>
+        <div class="doc-card-badge">✓ Disponível</div>
       </div>
     </div>
 
@@ -543,6 +543,56 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
       </div>
     </div>
 
+
+    <!-- ═══ PAINEL QUADROS ABNT ═══ -->
+    <div class="doc-panel" id="panel-quadros">
+      <div class="form-card collapsed" id="card-quadros-id">
+        <div class="form-card-hdr" onclick="toggleCard('quadros-id')">
+          <div class="form-card-left">
+            <div class="form-card-title">Dados dos Quadros ABNT</div>
+            <div class="form-card-sub">Preenchido automaticamente com as Unidades do Empreendimento</div>
+          </div>
+          <div class="form-card-toggle">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="form-body">
+          <div class="sec-title">Empreendimento</div>
+          <div class="fg fg-2">
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fq-nome" readonly></div>
+            <div class="field"><label>Nº de Unidades <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fq-n-unidades" readonly></div>
+          </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Endereço <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fq-rua" readonly></div>
+            <div class="field"><label>Setor <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fq-setor" readonly></div>
+            <div class="field"><label>Cidade <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fq-cidade" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Responsável Técnico / CREA <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fq-resp-crea" readonly></div>
+            <div class="field"><label>Data de Emissão</label>
+              <input type="text" id="fq-data" readonly></div>
+          </div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <div class="action-lbl">
+          <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar Quadros ABNT</strong>
+          Baixa o Excel com áreas e frações preenchidos por unidade. Gerado pelo script Python no servidor.
+        </div>
+        <a class="btn-sec" href="QUADROS_ABNT.xlsx" download>⬇ Modelo original</a>
+        <a class="btn-gerar verde" id="btn-gerar-quadros" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar Quadros ABNT
+        </a>
+      </div>
+    </div>
+
   </div><!-- fim #docs-area -->
 </div>
 
@@ -688,6 +738,18 @@ function mostrarEmpreendimento(){
   btnMemInfra.href    = nomeArquivo(emp,'MEMORIAL_INFRAESTRUTURA','docx');
   btnMemInfra.download= nomeArquivo(emp,'MEMORIAL_INFRAESTRUTURA','docx');
   btnMemInfra.style.pointerEvents='auto'; btnMemInfra.style.opacity='1';
+  // Quadros ABNT
+  document.getElementById('fq-nome').value       = emp.nome;
+  document.getElementById('fq-n-unidades').value = emp.n_unidades !== '' ? String(emp.n_unidades) : '';
+  document.getElementById('fq-rua').value        = emp.rua;
+  document.getElementById('fq-setor').value      = emp.setor;
+  document.getElementById('fq-cidade').value     = emp.cidade;
+  document.getElementById('fq-resp-crea').value  = [emp.responsavel_tecnico, emp.crea].filter(Boolean).join(' · ');
+  document.getElementById('fq-data').value       = dataExtenso();
+  const btnQuadros = document.getElementById('btn-gerar-quadros');
+  btnQuadros.href    = nomeArquivo(emp,'QUADROS_ABNT','xlsx');
+  btnQuadros.download= nomeArquivo(emp,'QUADROS_ABNT','xlsx');
+  btnQuadros.style.pointerEvents='auto'; btnQuadros.style.opacity='1';
 }
 
 // ── CAMPO COM STATUS DE PREENCHIMENTO ────────────────────────────────────────
@@ -705,7 +767,7 @@ function toggleCard(cardId){
 }
 
 // ── TROCAR DOCUMENTO ─────────────────────────────────────────────────────────
-const DOCS = ['fre','carta','memorial-hab','memorial-infra'];
+const DOCS = ['fre','carta','memorial-hab','memorial-infra','quadros'];
 function abrirDoc(doc){
   DOCS.forEach(d=>{
     const c = document.getElementById('card-'+d);
