@@ -374,6 +374,14 @@ def gerar_fre(emp):
 
 # ── Gerar Carta Proposta (.docx) ──────────────────────────────────────────────
 
+def remover_protecao_docx(doc):
+    """Remove proteção de edição do documento Word (w:documentProtection)."""
+    from docx.oxml.ns import qn
+    settings = doc.settings.element
+    protection = settings.find(qn('w:documentProtection'))
+    if protection is not None:
+        settings.remove(protection)
+
 def gerar_carta_proposta(emp):
     try:
         from docx import Document
@@ -433,6 +441,7 @@ def gerar_carta_proposta(emp):
                 for para in cell.paragraphs:
                     sub_para_carta(para)
 
+    remover_protecao_docx(doc)
     out = nome_arquivo(emp, "CARTA_PROPOSTA", "docx")
     doc.save(out)
     print(f"  Carta Proposta: {out}")
