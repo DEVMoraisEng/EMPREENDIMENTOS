@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-06-19T14:40:04Z",
+  "updated_at": "2026-06-19T17:33:40Z",
   "empreendimentos": [
     {
       "id": "382c5ab5-32d3-80c4-a5ee-c704ee747c5e",
       "nome": "VALE DAS BRISAS",
-      "setor": "SITIOS VALE DAS BRISAS",
-      "cidade": "SENADOR CANEDO",
+      "setor": "",
+      "cidade": "",
       "rua": "AVENIDA CAMPINA VERDE",
       "complemento": "QUADRA 09, LOTE 22",
       "cep": "75262-232",
@@ -21,8 +21,8 @@
       "termino_aprovacao": "",
       "inicio_obras": "",
       "termino_obras": "",
-      "proponente": "MORAIS VALE DAS BRISAS SPE LTDA",
-      "doc_proponente": "63.177.172/0001-55",
+      "proponente": "",
+      "doc_proponente": "",
       "construtora": "",
       "doc_construtora": "",
       "responsavel_tecnico": "",
