@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '0 */4 * * *'   # a cada 4 horas
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
