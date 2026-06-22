@@ -591,43 +591,76 @@ async function carregarChecklistsJson() {
 }
 
 // ── BUSCA DIRETO NO NOTION (fallback) ────────────────────────────────────────
+async function chamarNotion(dbId, body) {
+  // Tenta chamar a API do Notion via múltiplos proxies CORS em sequência
+  const notionUrl = `https://api.notion.com/v1/databases/${dbId}/query`;
+  const proxies = [
+    // Proxy 1: corsproxy.io — mais confiável
+    async () => {
+      const r = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(notionUrl)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'Authorization': `Bearer ${NOTION_TOKEN}`,
+                   'Notion-Version': NOTION_VERSION },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(`corsproxy HTTP ${r.status}`);
+      return r.json();
+    },
+    // Proxy 2: allorigins
+    async () => {
+      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(notionUrl)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+                   'Authorization': `Bearer ${NOTION_TOKEN}`,
+                   'Notion-Version': NOTION_VERSION,
+                   'x-requested-with': 'XMLHttpRequest' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(`allorigins HTTP ${r.status}`);
+      return r.json();
+    },
+  ];
+
+  for (const proxy of proxies) {
+    try {
+      return await proxy();
+    } catch(e) {
+      console.warn('Proxy falhou, tentando próximo:', e.message);
+    }
+  }
+  throw new Error('Todos os proxies falharam');
+}
+
 async function buscarDoNotion(tab, nomeEmp) {
   const dbId = CHECKLIST_DBS[tab];
-  const url  = `https://api.notion.com/v1/databases/${dbId}/query`;
 
-  // Tenta com filtro pelo nome primeiro
+  // Tenta com filtro pelo nome primeiro, depois sem filtro (fallback)
   const tentativas = [
     { filter: { property: 'Name', title: { equals: nomeEmp } } },
-    {} // sem filtro — filtra client-side
+    {}
   ];
 
   for (const body of tentativas) {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${NOTION_TOKEN}`,
-        'Notion-Version': NOTION_VERSION,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body)
-    });
+    try {
+      const data = await chamarNotion(dbId, body);
+      let results = data.results || [];
 
-    if (!resp.ok) throw new Error(`Notion HTTP ${resp.status}`);
-    const data = await resp.json();
-    let results = data.results || [];
+      // Filtra client-side quando veio sem filtro
+      if (!body.filter) {
+        const nu = nomeEmp.trim().toUpperCase();
+        results = results.filter(p => {
+          const t = p.properties?.Name?.title?.[0]?.plain_text || '';
+          return t.trim().toUpperCase() === nu ||
+                 t.trim().toUpperCase().includes(nu) ||
+                 nu.includes(t.trim().toUpperCase());
+        });
+      }
 
-    // Se veio tudo sem filtro, filtra client-side
-    if (!body.filter) {
-      const nu = nomeEmp.trim().toUpperCase();
-      results = results.filter(p => {
-        const t = p.properties?.Name?.title?.[0]?.plain_text || '';
-        return t.trim().toUpperCase() === nu ||
-               t.trim().toUpperCase().includes(nu) ||
-               nu.includes(t.trim().toUpperCase());
-      });
+      if (results.length > 0) return converterPaginasNotion(results);
+    } catch(e) {
+      console.warn(`Tentativa Notion falhou (${body.filter ? 'com filtro' : 'sem filtro'}):`, e.message);
     }
-
-    if (results.length > 0) return converterPaginasNotion(results);
   }
   return { itens: [], stats: {} };
 }
