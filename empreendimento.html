@@ -476,6 +476,15 @@ const TAB_KEY_MAP = {
   'contratacao':  'contratacao',
 };
 
+// IDs dos BDs do Notion (usados como fallback quando data_checklists.json não existe)
+const CHECKLIST_DBS = {
+  'pre-analise': '387c5ab532d380fcb6d0d2cb563926b6',
+  'analise-def': '387c5ab532d38040b1a4d3d3c4890235',
+  'contratacao':  '387c5ab532d380378ed7ea77833705c3',
+};
+const NOTION_TOKEN   = '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';
+const NOTION_VERSION = '2022-06-28';
+
 // ── ESTADO ──────────────────────────────────────────────────────────────────
 let EMP = null;
 let CHECKLISTS_DATA = null;   // conteúdo de data_checklists.json
@@ -568,16 +577,108 @@ function carregarTabAtual() {
 
 // ── CARREGAR data_checklists.json ────────────────────────────────────────────
 async function carregarChecklistsJson() {
-  if (CHECKLISTS_DATA) return CHECKLISTS_DATA; // já carregado
+  if (CHECKLISTS_DATA) return CHECKLISTS_DATA;
   try {
     const resp = await fetch(`data_checklists.json?t=${Date.now()}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     CHECKLISTS_DATA = await resp.json();
+    console.log('Checklists carregados do JSON local');
   } catch(e) {
-    console.warn('data_checklists.json não encontrado ou inválido:', e.message);
-    CHECKLISTS_DATA = { checklists: {} };
+    console.warn('data_checklists.json indisponível, usará API Notion:', e.message);
+    CHECKLISTS_DATA = null; // sinaliza para usar Notion diretamente
   }
   return CHECKLISTS_DATA;
+}
+
+// ── BUSCA DIRETO NO NOTION (fallback) ────────────────────────────────────────
+async function buscarDoNotion(tab, nomeEmp) {
+  const dbId = CHECKLIST_DBS[tab];
+  const url  = `https://api.notion.com/v1/databases/${dbId}/query`;
+
+  // Tenta com filtro pelo nome primeiro
+  const tentativas = [
+    { filter: { property: 'Name', title: { equals: nomeEmp } } },
+    {} // sem filtro — filtra client-side
+  ];
+
+  for (const body of tentativas) {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${NOTION_TOKEN}`,
+        'Notion-Version': NOTION_VERSION,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) throw new Error(`Notion HTTP ${resp.status}`);
+    const data = await resp.json();
+    let results = data.results || [];
+
+    // Se veio tudo sem filtro, filtra client-side
+    if (!body.filter) {
+      const nu = nomeEmp.trim().toUpperCase();
+      results = results.filter(p => {
+        const t = p.properties?.Name?.title?.[0]?.plain_text || '';
+        return t.trim().toUpperCase() === nu ||
+               t.trim().toUpperCase().includes(nu) ||
+               nu.includes(t.trim().toUpperCase());
+      });
+    }
+
+    if (results.length > 0) return converterPaginasNotion(results);
+  }
+  return { itens: [], stats: {} };
+}
+
+// Converte páginas brutas do Notion para o formato do JSON local
+function converterPaginasNotion(pages) {
+  const itens = [];
+  for (const page of pages) {
+    const props = page.properties || {};
+    let nome = '';
+    const campos = {};
+    for (const [k, v] of Object.entries(props)) {
+      if (v.type === 'title') {
+        nome = v.title?.map(t => t.plain_text).join('') || '';
+      } else if (v.type === 'select') {
+        campos[k] = v.select?.name || null;
+      } else if (v.type === 'rich_text') {
+        const txt = v.rich_text?.map(t => t.plain_text).join('') || '';
+        if (txt) campos[k] = txt;
+      }
+    }
+    itens.push({ nome, campos });
+  }
+
+  // Calcula stats
+  let total = 0, sim = 0, nao = 0, solicitado = 0, aprovado = 0, inexiste = 0;
+  for (const item of itens) {
+    for (const v of Object.values(item.campos)) {
+      if (!v) continue;
+      total++;
+      const vu = v.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+      if (vu === 'SIM')                sim++;
+      else if (vu === 'NAO' || vu === 'NÃO') nao++;
+      else if (vu === 'SOLICITADO')    solicitado++;
+      else if (vu === 'APROVADO')      aprovado++;
+      else if (vu === 'INEXISTE')      inexiste++;
+    }
+  }
+  const considerados = total - inexiste;
+  const pct = (n) => considerados > 0 ? Math.round(n / considerados * 100) : 0;
+
+  return {
+    itens,
+    stats: {
+      total_celulas: total, inexiste, considerados,
+      sim, nao, solicitado, aprovado,
+      pct_iniciados:   pct(sim),
+      pct_solicitados: pct(solicitado),
+      pct_aprovados:   pct(aprovado),
+    }
+  };
 }
 
 // ── BUSCA E RENDER DO CHECKLIST ───────────────────────────────────────────────
@@ -586,24 +687,32 @@ async function buscarChecklist(tab, nomeEmp) {
   const contentEl = document.getElementById(`content-${tab}`);
 
   try {
-    const json    = await carregarChecklistsJson();
-    const tabKey  = TAB_KEY_MAP[tab];
-
-    // Localiza o empreendimento pelo nome (match case-insensitive)
-    const nomeUpper = nomeEmp.trim().toUpperCase();
+    // 1ª tentativa: JSON local gerado pelo workflow
+    const json = await carregarChecklistsJson();
     let dadosTab = null;
 
-    for (const [nomeJson, tabs] of Object.entries(json.checklists || {})) {
-      if (nomeJson.trim().toUpperCase() === nomeUpper ||
-          nomeUpper.includes(nomeJson.trim().toUpperCase()) ||
-          nomeJson.trim().toUpperCase().includes(nomeUpper)) {
-        dadosTab = tabs[tabKey] || null;
-        break;
+    if (json) {
+      const tabKey    = TAB_KEY_MAP[tab];
+      const nomeUpper = nomeEmp.trim().toUpperCase();
+      for (const [nomeJson, tabs] of Object.entries(json.checklists || {})) {
+        if (nomeJson.trim().toUpperCase() === nomeUpper ||
+            nomeUpper.includes(nomeJson.trim().toUpperCase()) ||
+            nomeJson.trim().toUpperCase().includes(nomeUpper)) {
+          dadosTab = tabs[tabKey] || null;
+          break;
+        }
       }
+    }
+
+    // 2ª tentativa: busca direto no Notion
+    if (!dadosTab) {
+      console.log(`JSON sem dados para "${nomeEmp}" / ${tab} — buscando no Notion...`);
+      dadosTab = await buscarDoNotion(tab, nomeEmp);
     }
 
     renderChecklistFromJson(tab, dadosTab);
     checlistsCarregados[tab] = true;
+
   } catch(e) {
     console.error('Checklist error:', e);
     if (loadEl) loadEl.style.display = 'none';
