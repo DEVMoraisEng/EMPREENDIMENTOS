@@ -28,10 +28,14 @@ jobs:
 
       - name: Gerar documentos e data_emp.json
         env:
-          NOTION_TOKEN_EMP: ${{ secrets.NOTION_TOKEN_EMP }}
-          NOTION_DB_EMP:    ${{ secrets.NOTION_DB_EMP }}
-          NOTION_TOKEN_UH:  ${{ secrets.NOTION_TOKEN_UH }}
-          NOTION_DB_UH:     ${{ secrets.NOTION_DB_UH }}
+          NOTION_TOKEN_EMP:      ${{ secrets.NOTION_TOKEN_EMP }}
+          NOTION_DB_EMP:         ${{ secrets.NOTION_DB_EMP }}
+          NOTION_TOKEN_UH:       ${{ secrets.NOTION_TOKEN_UH }}
+          NOTION_DB_UH:          ${{ secrets.NOTION_DB_UH }}
+          NOTION_TOKEN_CL:       ${{ secrets.NOTION_TOKEN_CL }}
+          NOTION_DB_PRE_ANALISE: ${{ secrets.NOTION_DB_PRE_ANALISE }}
+          NOTION_DB_ANALISE_DEF: ${{ secrets.NOTION_DB_ANALISE_DEF }}
+          NOTION_DB_CONTRATACAO: ${{ secrets.NOTION_DB_CONTRATACAO }}
         run: python fetch_empreendimentos.py
 
       - name: Preparar dist/
@@ -39,7 +43,9 @@ jobs:
           mkdir -p dist
           cp index.html dist/
           cp documentacoes.html dist/
+          cp empreendimento.html dist/
           cp data_emp.json dist/
+          cp data_checklists.json dist/ 2>/dev/null || true
           cp logo.png dist/ 2>/dev/null || true
 
           # Copia arquivos gerados pelo script (nomes com underscore, gerados pelo Python)
