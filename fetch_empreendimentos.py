@@ -17,6 +17,7 @@ Segredos necessarios (GitHub Actions Secrets):
   NOTION_DB_EMP          — ID do BD EMPREENDIMENTOS
   NOTION_TOKEN_UH        — token do BD UNIDADES DO EMPREENDIMENTO
   NOTION_DB_UH           — ID do BD UNIDADES DO EMPREENDIMENTO
+  NOTION_TOKEN_CL        — token dos BDs de checklist de aprovacao
   NOTION_DB_PRE_ANALISE  — ID do BD CHECKLIST PRE-ANALISE        (fallback: 387c5ab532d380fcb6d0d2cb563926b6)
   NOTION_DB_ANALISE_DEF  — ID do BD CHECKLIST ANALISE DEFINITIVA (fallback: 387c5ab532d38040b1a4d3d3c4890235)
   NOTION_DB_CONTRATACAO  — ID do BD CHECKLIST CONTRATACAO        (fallback: 387c5ab532d380378ed7ea77833705c3)
@@ -33,8 +34,9 @@ NOTION_DB    = os.environ.get("NOTION_DB_EMP", "")
 NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH", "")
 NOTION_DB_UH    = os.environ.get("NOTION_DB_UH", "")
 
-# BD de Checklists de Aprovacao — mesmo token do EMP, DBs separados
+# BD de Checklists de Aprovacao — token e DBs proprios
 # Os IDs abaixo sao fallback caso o secret nao esteja configurado
+NOTION_TOKEN_CL = os.environ.get("NOTION_TOKEN_CL", "")
 NOTION_DB_PRE_ANALISE = os.environ.get(
     "NOTION_DB_PRE_ANALISE", "387c5ab532d380fcb6d0d2cb563926b6"
 )
@@ -62,8 +64,8 @@ def _headers(token):
 
 HEADERS        = _headers(NOTION_TOKEN)
 HEADERS_UH     = _headers(NOTION_TOKEN_UH)
-# Checklists usam o mesmo token do EMP
-HEADERS_CL     = _headers(NOTION_TOKEN)
+# Checklists usam token proprio (NOTION_TOKEN_CL)
+HEADERS_CL     = _headers(NOTION_TOKEN_CL)
 
 # ── Helpers de propriedades Notion ───────────────────────────────────────────
 
