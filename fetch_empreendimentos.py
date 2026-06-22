@@ -675,6 +675,8 @@ def gerar_quadros_abnt(emp, unidades):
         "{DOC. INCORPORADOR}":      emp.get("doc_incorporador", ""),
         "{NOME DO EMPREENDIMENTO}": emp["nome"],
         "{Nº DE UNIDADES}":         n_un_str,
+        "{RESPONSÁVEL TÉCNICO}":    emp.get("responsavel_tecnico", ""),
+        "{CREA}":                   emp.get("crea", ""),
     }
     for row in ws_ip.iter_rows():
         for cell in row:
