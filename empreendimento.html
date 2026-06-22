@@ -243,7 +243,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
     </div>
     <div class="nav-item" data-aba="andamento" onclick="navegarAba('andamento')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Andamento
+      Andamento da Obra
     </div>
     <div class="nav-item" data-aba="documentacoes" onclick="navegarAba('documentacoes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -437,23 +437,30 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 
     <!-- ABA: ANDAMENTO (placeholder) -->
     <div id="aba-andamento" style="display:none">
-      <div class="sec-title">Andamento</div>
+      <div class="sec-title">Andamento da Obra</div>
       <div class="aba-em-breve">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <h3>Em desenvolvimento</h3>
-        <p>A aba de Andamento estará disponível em breve.</p>
+        <p>A aba de Andamento da Obra estará disponível em breve.</p>
       </div>
     </div>
 
     <!-- ABA: DOCUMENTAÇÕES -->
     <div id="aba-documentacoes" style="display:none">
-      <div class="sec-title">Documentações</div>
-      <div id="doc-redirect-msg" class="aba-em-breve">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <h3>Documentações CEF</h3>
-        <p style="margin-bottom:16px">Geração automática de documentos para Caixa Econômica Federal.</p>
-        <a id="doc-link" href="#" style="display:inline-block;padding:10px 20px;background:var(--azul);color:#fff;border-radius:8px;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.05em">Abrir Documentações →</a>
+      <div class="sec-title" style="margin-bottom:12px">
+        Documentações
+        <a id="doc-link-externo" href="#" target="_blank"
+           style="margin-left:12px;font-size:11px;font-weight:600;color:var(--teal);
+                  text-decoration:none;letter-spacing:.04em;font-family:'Barlow',sans-serif">
+          ↗ Abrir em nova aba
+        </a>
       </div>
+      <iframe id="doc-iframe"
+              src="about:blank"
+              style="width:100%;height:calc(100vh - 160px);border:1.5px solid var(--border2);
+                     border-radius:12px;background:var(--branco);display:block"
+              frameborder="0">
+      </iframe>
     </div>
 
   </div><!-- /content -->
@@ -525,7 +532,14 @@ function navegarAba(aba) {
     carregarTabAtual();
   }
   if (aba === 'documentacoes' && EMP) {
-    document.getElementById('doc-link').href = `documentacoes.html?id=${encodeURIComponent(EMP.id)}`;
+    const url = `documentacoes.html?id=${encodeURIComponent(EMP.id)}`;
+    const iframe = document.getElementById('doc-iframe');
+    // Carrega só na primeira vez
+    if (iframe && iframe.src === 'about:blank') {
+      iframe.src = url;
+    }
+    const ext = document.getElementById('doc-link-externo');
+    if (ext) ext.href = url;
   }
 }
 
@@ -825,9 +839,7 @@ async function init() {
 
     preencherVisaoGeral(EMP);
 
-    // Link de documentações
-    const docLink = document.getElementById('doc-link');
-    if (docLink) docLink.href = `documentacoes.html?id=${encodeURIComponent(id)}`;
+    // Link externo de documentações — definido em navegarAba ao entrar na aba
 
     // Abre aba conforme parametro de URL
     const abaParam = getParam('aba');
