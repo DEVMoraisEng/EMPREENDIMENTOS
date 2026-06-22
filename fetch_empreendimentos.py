@@ -549,25 +549,22 @@ def gerar_quadros_abnt(emp, unidades):
 
     if n > 1:
         ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
-        h = ws_capa.row_dimensions[CAPA_TPL].height
-        for i in range(1, n):
-            nr = CAPA_TPL + i
-            for col in range(1, 10):
-                copiar_estilo(ws_capa.cell(row=CAPA_TPL, column=col),
-                              ws_capa.cell(row=nr,        column=col))
-            ws_capa.row_dimensions[nr].height = h
 
     total_row = CAPA_TPL + n   # linha TOTAL após inserção
 
     # Remover merges espúrios que o insert_rows cria nas linhas de UH
-    # (openpyxl copia os merges da linha-origem para as novas linhas,
-    #  o que bloqueia a escrita de D/E/F/G/H nas UHs extras)
-    merges_para_remover = []
-    for m in ws_capa.merged_cells.ranges:
-        if CAPA_TPL <= m.min_row <= total_row - 1 and str(m) != f"B{total_row}:H{total_row}":
-            merges_para_remover.append(str(m))
-    for m_str in merges_para_remover:
-        ws_capa.unmerge_cells(m_str)
+    for m in list(ws_capa.merged_cells.ranges):
+        if CAPA_TPL <= m.min_row <= total_row - 1:
+            ws_capa.merged_cells.remove(m)
+
+    # Copiar estilo da linha-template (L9) para TODAS as linhas de UH
+    h = ws_capa.row_dimensions[CAPA_TPL].height
+    for i in range(n):
+        nr = CAPA_TPL + i
+        for col in range(1, 10):
+            copiar_estilo(ws_capa.cell(row=CAPA_TPL, column=col),
+                          ws_capa.cell(row=nr,        column=col))
+        ws_capa.row_dimensions[nr].height = h
 
     # Preenche cada UH na CAPA
     for i, uh in enumerate(uhs):
@@ -768,27 +765,10 @@ def gerar_quadros_abnt(emp, unidades):
 
     # ── 5b. QUADRO IV B ───────────────────────────────────────────────────────
     ws_4b = wb["QUADRO IV B"]
-    # Template: linha 14=UH1, linhas 15+ com #REF!
-    # Não há linha TOTAIS explícita — apenas as UHs seguidas de texto de observação
-    IVB_FIRST = 14
+    # Template: linha 14=UH1, linhas 15..75 com #REF! (62 slots fixos)
+    IVB_FIRST    = 14
+    IVB_TOT_ORIG = 76   # total de slots no template (mesmo critério do IV A)
 
-    # Encontrar até onde vão as linhas de UH (procurar primeira linha sem border após L14)
-    # No template, há linhas até aprox 75 com bordas; calcular o total de slots
-    # A linha de texto "Designação da unidade" está acima (L12-L13)
-    # Slots disponíveis no template: contar linhas com border a partir de L15
-    ivb_slots = 0
-    for r in range(IVB_FIRST + 1, 200):
-        row_cells = list(ws_4b.iter_rows(min_row=r, max_row=r))[0]
-        has_border = any(c.border.left.border_style or c.border.right.border_style
-                         or c.border.top.border_style or c.border.bottom.border_style
-                         for c in row_cells)
-        has_content = any(c.value is not None for c in row_cells)
-        if not has_border and not has_content:
-            break
-        ivb_slots += 1
-    total_ivb_slots = 1 + ivb_slots  # inclui linha 14
-
-    # Preencher fórmulas para as n UHs reais
     for i in range(n):
         row_4b = IVB_FIRST + i
         row_q2 = Q2_TPL + i
@@ -802,34 +782,23 @@ def gerar_quadros_abnt(emp, unidades):
         ws_4b.cell(row=row_4b, column=8).value = f"=('QUADRO II'!N{row_q2})"
         ws_4b.cell(row=row_4b, column=9).value = f"=('QUADRO II'!V{row_q2})"
 
-    # Deletar linhas excedentes do IV B
-    excesso_4b = total_ivb_slots - n
+    # Deletar linhas excedentes — mesma lógica do IV A
+    excesso_4b = IVB_TOT_ORIG - (IVB_FIRST + n)
     if excesso_4b > 0:
         ws_4b.delete_rows(IVB_FIRST + n, excesso_4b)
 
     # ── 5c. QUADRO IV B.1 ─────────────────────────────────────────────────────
     ws_4b1 = wb["QUADRO IV B.1"]
-    # Template: linha 15=UH1 (linha 14 é cabeçalho A B C D...), linhas 16+ com #REF!
-    IVB1_FIRST = 15
-
-    # Contar slots disponíveis
-    ivb1_slots = 0
-    for r in range(IVB1_FIRST + 1, 200):
-        row_cells = list(ws_4b1.iter_rows(min_row=r, max_row=r))[0]
-        has_border = any(c.border.left.border_style or c.border.right.border_style
-                         or c.border.top.border_style or c.border.bottom.border_style
-                         for c in row_cells)
-        has_content = any(c.value is not None for c in row_cells)
-        if not has_border and not has_content:
-            break
-        ivb1_slots += 1
-    total_ivb1_slots = 1 + ivb1_slots
+    # Template: linha 15=UH1 (linha 14 é cabeçalho A B C...), linhas 16..76 com #REF! (62 slots)
+    IVB1_FIRST    = 15
+    IVB1_TOT_ORIG = 77   # total de slots no template
 
     for i in range(n):
         row_b1 = IVB1_FIRST + i
         row_q2 = Q2_TPL + i
         capa_r = CAPA_TPL + i
-        row_4b = IVB_FIRST + i   # linha correspondente no IV B (após deleção, mesmo índice)
+        # IV B teve linhas deletadas, mas IVB_FIRST permanece o mesmo (só excedentes foram removidos)
+        row_4b = IVB_FIRST + i
         ws_4b1.cell(row=row_b1, column=2).value  = f"=('QUADRO II'!B{row_q2})"
         ws_4b1.cell(row=row_b1, column=3).value  = f"=CAPA!D{capa_r}"
         ws_4b1.cell(row=row_b1, column=4).value  = f"='QUADRO IV B'!D{row_4b}"
@@ -842,7 +811,7 @@ def gerar_quadros_abnt(emp, unidades):
         ws_4b1.cell(row=row_b1, column=12).value = f"=('QUADRO II'!V{row_q2})"
 
     # Deletar linhas excedentes do IV B.1
-    excesso_4b1 = total_ivb1_slots - n
+    excesso_4b1 = IVB1_TOT_ORIG - (IVB1_FIRST + n)
     if excesso_4b1 > 0:
         ws_4b1.delete_rows(IVB1_FIRST + n, excesso_4b1)
 
