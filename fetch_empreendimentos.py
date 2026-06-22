@@ -157,8 +157,8 @@ def processar_pagina(page):
     complemento = get_texto(get_prop(props, "COMPLEMENTO", "Complemento"))
     cep         = get_texto(get_prop(props, "CEP", "Cep", "cep"))
     crea        = get_texto(get_prop(props, "CREA", "CAU/CREA", "CAU"))
-    incorporador  = get_texto(get_prop(props, "INCORPORADOR", "Incorporador"))
-    doc_incorp    = get_texto(get_prop(props, "DOC. INCORPORADOR", "DOC INCORPORADOR"))
+    incorporador  = get_texto_ou_select(get_prop(props, "INCORPORADOR", "Incorporador"))
+    doc_incorp    = get_texto_ou_select(get_prop(props, "DOC. INCORPORADOR", "DOC INCORPORADOR"))
     tel           = get_texto(get_prop(props, "TEL. CONTATO", "TEL CONTATO", "TELEFONE", "Telefone"))
     email         = get_texto(get_prop(props, "EMAIL", "E-MAIL", "Email"))
     agencia       = get_texto(get_prop(props, "AGÊNCIA", "AGENCIA", "Agência"))
@@ -548,8 +548,6 @@ def gerar_quadros_abnt(emp, unidades):
     CAPA_TOT = 10   # linha TOTAL original
 
     if n > 1:
-        # Antes de inserir linhas, remover merges da linha TOTAL que serão deslocados
-        # (openpyxl ajusta merges automaticamente no insert_rows, mas garantimos)
         ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
         h = ws_capa.row_dimensions[CAPA_TPL].height
         for i in range(1, n):
@@ -559,7 +557,17 @@ def gerar_quadros_abnt(emp, unidades):
                               ws_capa.cell(row=nr,        column=col))
             ws_capa.row_dimensions[nr].height = h
 
-    total_row = CAPA_TPL + n   # linha TOTAL após inserção (10 para n=1, 11 para n=2, etc.)
+    total_row = CAPA_TPL + n   # linha TOTAL após inserção
+
+    # Remover merges espúrios que o insert_rows cria nas linhas de UH
+    # (openpyxl copia os merges da linha-origem para as novas linhas,
+    #  o que bloqueia a escrita de D/E/F/G/H nas UHs extras)
+    merges_para_remover = []
+    for m in ws_capa.merged_cells.ranges:
+        if CAPA_TPL <= m.min_row <= total_row - 1 and str(m) != f"B{total_row}:H{total_row}":
+            merges_para_remover.append(str(m))
+    for m_str in merges_para_remover:
+        ws_capa.unmerge_cells(m_str)
 
     # Preenche cada UH na CAPA
     for i, uh in enumerate(uhs):
@@ -659,9 +667,14 @@ def gerar_quadros_abnt(emp, unidades):
 
     ws_q2.insert_rows(Q2_VAZIA, amount=n)
     # Agora: L17=CASA01_tpl, L18..17+n=novas, 18+n=TOTAIS
+    # ATENÇÃO: insert_rows(18, n) cria n linhas (18,19,...,17+n),
+    # mas escrevemos UHs em 17,18,...,16+n — a linha 17+n fica vazia.
+    # Deletar essa linha excedente antes de continuar.
+    ws_q2.delete_rows(Q2_TPL + n)
+    # Agora: L17..16+n=slots das UHs, L17+n=TOTAIS
 
-    q2_totais     = Q2_TPL + n + 1   # linha TOTAIS
-    q2_area_global = q2_totais + 1   # linha ÁREA REAL GLOBAL
+    q2_totais      = Q2_TPL + n       # linha TOTAIS (corrigida após deleção)
+    q2_area_global = q2_totais + 1    # linha ÁREA REAL GLOBAL
 
     h2 = ws_q2.row_dimensions[Q2_TPL].height
 
