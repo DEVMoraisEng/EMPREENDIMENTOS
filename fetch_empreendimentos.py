@@ -504,6 +504,7 @@ def gerar_quadros_abnt(emp, unidades):
     """
     try:
         from openpyxl import load_workbook
+        from openpyxl.utils import get_column_letter
         import copy as _copy
     except ImportError:
         print("  AVISO: openpyxl não instalado"); return None
@@ -564,14 +565,37 @@ def gerar_quadros_abnt(emp, unidades):
 
     total_row = CAPA_TPL + n   # linha TOTAL após inserção (dinâmico para qualquer N)
 
+    # Capturar merges do bloco de assinatura ANTES do insert.
+    # São os merges com min_row >= CAPA_TOT+1 (linha 11 em diante no template).
+    # Após insert de (n-1) linhas, cada merge sobe (n-1) posições.
+    merges_assinatura = []
+    for m in ws_capa.merged_cells.ranges:
+        if m.min_row >= CAPA_TOT + 1:   # linhas 11+ = bloco de assinatura
+            merges_assinatura.append((
+                m.min_row + (n - 1),    # nova posição após insert
+                m.min_col,
+                m.max_row + (n - 1),
+                m.max_col,
+            ))
+
     if n > 1:
         ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
-        # No template, linhas 9 e 10 não têm merges — qualquer merge que apareça
-        # nelas após o insert é espúrio (criado pelo openpyxl ao copiar linhas).
-        # Linhas 11+ (assinatura) têm merges legítimos deslocados corretamente.
+        # Remover merges espúrios criados pelo insert nas linhas das UHs.
+        # Linhas 9-10 não têm merges no template, então qualquer merge
+        # nesse range após o insert é espúrio.
         for m in list(ws_capa.merged_cells.ranges):
             if CAPA_TPL <= m.min_row <= total_row - 1:
                 ws_capa.merged_cells.remove(m)
+        # Remover também os merges de assinatura que o insert deslocou
+        # (vamos restaurá-los nas posições corretas logo abaixo)
+        for m in list(ws_capa.merged_cells.ranges):
+            if m.min_row > total_row:
+                ws_capa.merged_cells.remove(m)
+        # Restaurar merges de assinatura nas posições corretas
+        for min_r, min_c, max_r, max_c in merges_assinatura:
+            col_ini = get_column_letter(min_c)
+            col_fim = get_column_letter(max_c)
+            ws_capa.merge_cells(f"{col_ini}{min_r}:{col_fim}{max_r}")
 
     # Copiar estilo da linha UH1 (L9) para TODAS as linhas de UH
     for i in range(n):
@@ -618,20 +642,6 @@ def gerar_quadros_abnt(emp, unidades):
         dst.number_format = est["number_format"]
 
     ws_capa.row_dimensions[total_row].height = h_tot
-    # Reaplicar merges B:H no bloco de assinatura.
-    # O insert_rows desloca esses merges mas às vezes os perde quando colidem
-    # com o range de remoção de merges espúrios. Garantir que existem:
-    #   data       → total_row + 1
-    #   tracejado  → total_row + 3
-    #   responsável→ total_row + 4
-    #   CREA       → total_row + 5
-    for offset in [1, 3, 4, 5]:
-        r_ass = total_row + offset
-        # Remover merge existente na linha (se houver) antes de reaplicar
-        for m in list(ws_capa.merged_cells.ranges):
-            if m.min_row == r_ass:
-                ws_capa.merged_cells.remove(m)
-        ws_capa.merge_cells(f"B{r_ass}:H{r_ass}")
 
     # Corrigir referências D4 (área terreno) e D5 (área construída)
     ws_capa["D4"] = f"=G{total_row}"
