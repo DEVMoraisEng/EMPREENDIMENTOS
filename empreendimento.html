@@ -132,15 +132,37 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 .prazo-sub{font-size:10px;color:var(--text4);margin-top:2px;font-family:'DM Mono',monospace}
 
 /* SEÇÃO GERAL */
-.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;
-           color:var(--azul-esc);letter-spacing:.03em;margin-bottom:14px;
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;
+           color:var(--azul-esc);letter-spacing:.02em;margin-bottom:16px;
            display:flex;align-items:center;gap:8px}
 .sec-title::after{content:'';flex:1;height:1.5px;background:var(--border2)}
+
+/* MANUAIS */
+.manuais-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.manual-btn{display:flex;align-items:center;gap:16px;padding:18px 20px;
+            background:var(--branco);border:1.5px solid var(--border2);border-radius:12px;
+            text-decoration:none;transition:all .15s;cursor:pointer}
+.manual-btn:hover{border-color:var(--teal);box-shadow:0 4px 16px rgba(41,87,120,.08);
+                  transform:translateY(-1px)}
+.manual-ico{width:46px;height:46px;flex-shrink:0;border-radius:10px;
+            background:rgba(143,220,210,.18);display:flex;align-items:center;justify-content:center}
+.manual-ico svg{width:24px;height:24px;color:var(--azul)}
+.manual-txt{flex:1;min-width:0}
+.manual-nome{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;
+             color:var(--azul-esc);letter-spacing:.01em;display:flex;align-items:center;gap:8px}
+.manual-desc{font-size:12.5px;color:var(--text3);margin-top:2px;line-height:1.3}
+.manual-arrow{width:18px;height:18px;color:var(--text4);flex-shrink:0;transition:color .15s}
+.manual-btn:hover .manual-arrow{color:var(--teal)}
+.manual-tag{font-family:'Barlow',sans-serif;font-size:9px;font-weight:700;
+            text-transform:uppercase;letter-spacing:.06em;background:rgba(244,160,40,.15);
+            color:#b5720a;padding:2px 7px;border-radius:5px}
+.manual-btn-soon{opacity:.7}
+.manual-btn-soon:hover{border-color:var(--border);transform:none;box-shadow:none}
 
 /* ABA APROVAÇÃO */
 #aba-aprovacao{display:none}
 .aprov-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto}
-.aprov-tab{padding:10px 18px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+.aprov-tab{padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-size:15px;
            font-weight:700;letter-spacing:.05em;text-transform:uppercase;
            cursor:pointer;color:var(--text3);border-bottom:3px solid transparent;
            margin-bottom:-2px;white-space:nowrap;transition:color .15s}
@@ -160,33 +182,36 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 .aprov-resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
 .graf-card{background:var(--branco);border:1.5px solid var(--border2);border-radius:10px;
            padding:14px 16px;text-align:center}
-.graf-title{font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;
-            letter-spacing:.08em;margin-bottom:12px}
-.graf-ring-wrap{position:relative;width:80px;height:80px;margin:0 auto 10px}
+.graf-title{font-size:12.5px;font-weight:700;color:var(--azul);text-transform:uppercase;
+            letter-spacing:.06em;margin-bottom:12px}
+.graf-ring-wrap{position:relative;width:90px;height:90px;margin:0 auto 10px}
 .graf-ring-wrap svg{transform:rotate(-90deg)}
 .graf-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-          font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--azul)}
-.graf-sub{font-size:11px;color:var(--text3);font-weight:600}
-.graf-sub span{font-family:'DM Mono',monospace}
+          font-family:'DM Mono',monospace;font-size:18px;font-weight:600;color:var(--azul-esc)}
+.graf-sub{font-size:13px;color:var(--text);font-weight:600}
+.graf-sub span{font-family:'DM Mono',monospace;color:var(--azul);font-weight:700}
 
 /* TABELA CHECKLIST */
 .cl-table{width:100%;border-collapse:collapse;background:var(--branco);
           border-radius:10px;overflow:hidden;border:1.5px solid var(--border2)}
-.cl-table th{background:var(--azul);color:#fff;font-size:11px;font-weight:700;
-             text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;text-align:left}
-.cl-table td{padding:9px 14px;border-bottom:1px solid var(--border2);
-             font-size:13px;color:var(--text)}
+.cl-table th{background:var(--azul);color:#fff;font-size:13px;font-weight:700;
+             text-transform:uppercase;letter-spacing:.05em;padding:13px 16px;text-align:left}
+.cl-table td{padding:12px 16px;border-bottom:1px solid var(--border2);
+             font-size:14.5px;color:var(--text)}
 .cl-table tr:last-child td{border-bottom:none}
 .cl-table tr:hover td{background:var(--bg3)}
-.cl-doc{font-weight:600;color:var(--azul-esc)}
-.cl-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
-          border-radius:5px;font-size:10.5px;font-weight:700;letter-spacing:.04em}
-.cl-sim     {background:rgba(42,157,92,.12);color:#1a6b40}
-.cl-nao     {background:rgba(192,57,43,.1);color:#a93226}
-.cl-solicitado{background:rgba(244,160,40,.12);color:#b5720a}
-.cl-inexiste{background:rgba(176,190,197,.15);color:#607d8b}
-.cl-aprovado{background:rgba(41,87,120,.12);color:#1a3347}
-.cl-nd      {background:rgba(176,190,197,.1);color:#90aab8}
+.cl-doc{font-weight:600;color:var(--azul-esc);font-size:14.5px;line-height:1.35}
+.cl-resp{font-size:13.5px;color:var(--text3);font-weight:600}
+.cl-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
+          border-radius:5px;font-size:13px;font-weight:700;letter-spacing:.03em;
+          color:#fff;white-space:nowrap}
+/* Cores SOLIDAS iguais aos selects do Notion */
+.cl-sim       {background:#4f9d69}
+.cl-nao       {background:#e16b6b}
+.cl-solicitado{background:#d9930a}
+.cl-inexiste  {background:#9aa7b0}
+.cl-aprovado  {background:#4a8bbf}
+.cl-nd        {background:#c4d2da;color:#5a7280}
 
 .empty-tab{text-align:center;padding:40px;color:var(--text4);font-size:14px;
            background:var(--branco);border-radius:10px;border:1.5px dashed var(--border)}
@@ -204,6 +229,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
   .painel-top{grid-template-columns:1fr}
   .prazo-cards{grid-template-columns:1fr 1fr}
   .aprov-resumo{grid-template-columns:1fr}
+  .manuais-grid{grid-template-columns:1fr}
   .timeline{flex-direction:column}
   .tl-fase{border-right:none;border-bottom:1.5px solid var(--border2)}
 }
@@ -375,6 +401,31 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
           </div>
         </div>
       </div>
+
+      <!-- MANUAIS -->
+      <div class="sec-title" style="margin-top:28px">Manuais</div>
+      <div class="manuais-grid">
+        <a href="MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf" target="_blank" class="manual-btn">
+          <div class="manual-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+          </div>
+          <div class="manual-txt">
+            <div class="manual-nome">Manual de Documentações</div>
+            <div class="manual-desc">Responsabilidade de preenchimento para aprovação CEF / PMCMV</div>
+          </div>
+          <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="MANUAL_DE_PROJETOS.pdf" target="_blank" class="manual-btn manual-btn-soon" onclick="return avisarEmBreve(event)">
+          <div class="manual-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+          </div>
+          <div class="manual-txt">
+            <div class="manual-nome">Manual de Projetos <span class="manual-tag">em breve</span></div>
+            <div class="manual-desc">Requisitos e padrões dos projetos do empreendimento</div>
+          </div>
+          <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+      </div>
     </div>
 
     <!-- ABA: APROVAÇÃO -->
@@ -524,6 +575,13 @@ function setText(id, text, cls='') {
   if (!el) return;
   el.textContent = text || '—';
   if (cls) el.className = el.className.replace(/prazo-num\s*/,'') + ' prazo-num ' + cls;
+}
+
+// ── MANUAIS ──────────────────────────────────────────────────────────────────
+function avisarEmBreve(e) {
+  e.preventDefault();
+  alert('O Manual de Projetos será disponibilizado em breve.');
+  return false;
 }
 
 // ── NAVEGAÇÃO ───────────────────────────────────────────────────────────────
@@ -756,16 +814,84 @@ async function buscarChecklist(tab, nomeEmp) {
   }
 }
 
-// ── BADGES ────────────────────────────────────────────────────────────────────
+// ── BADGES (cores sólidas iguais aos selects do Notion) ──────────────────────
 function badgeCl(val) {
-  if (!val) return `<span class="cl-badge cl-nd">N/D</span>`;
+  if (!val) return `<span class="cl-badge cl-nd">—</span>`;
   const v = val.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  if (v === 'SIM')                    return `<span class="cl-badge cl-sim">✓ SIM</span>`;
-  if (v === 'NAO' || v === 'NÃO')    return `<span class="cl-badge cl-nao">✗ NÃO</span>`;
-  if (v === 'SOLICITADO')             return `<span class="cl-badge cl-solicitado">⟳ SOLICITADO</span>`;
-  if (v === 'INEXISTE')               return `<span class="cl-badge cl-inexiste">— INEXISTE</span>`;
-  if (v === 'APROVADO')               return `<span class="cl-badge cl-aprovado">★ APROVADO</span>`;
+  if (v === 'SIM')                    return `<span class="cl-badge cl-sim">SIM</span>`;
+  if (v === 'NAO' || v === 'NÃO')    return `<span class="cl-badge cl-nao">NÃO</span>`;
+  if (v === 'SOLICITADO')             return `<span class="cl-badge cl-solicitado">SOLICITADO</span>`;
+  if (v === 'INEXISTE')               return `<span class="cl-badge cl-inexiste">INEXISTE</span>`;
+  if (v === 'APROVADO')               return `<span class="cl-badge cl-aprovado">APROVADO</span>`;
   return `<span class="cl-badge cl-nd">${val}</span>`;
+}
+
+// ── MAPA DE RESPONSÁVEIS (extraído do Manual de Documentação) ────────────────
+const RESPONSAVEIS = {
+  'FRE': 'Depto. de Projetos',
+  'FICHA RESUMO': 'Depto. de Projetos',
+  'CERTIDAO ATUALIZADA': 'Júlio César',
+  'INTEIRO TEOR': 'Júlio César',
+  'MATRICULA': 'Júlio César',
+  'PLANIALTIMETRICO': 'Júlio César / João Vitor',
+  'LEVANTAMENTO PLANIALTIMETRICO': 'Júlio César / João Vitor',
+  'PROJETO ARQUITETONICO': 'Depto. de Projetos',
+  'MEMORIAL DESCRITIVO': 'Depto. de Projetos',
+  'EDIFICACOES': 'Depto. de Projetos',
+  'INFRAESTRUTURA': 'Depto. de Projetos',
+  'QUADROS': 'Felipe',
+  'NBR 12': 'Felipe',
+  '12.721': 'Felipe',
+  'CROQUI': 'Depto. de Projetos',
+  'ROTA ACESSIVEL': 'Depto. de Projetos',
+  'LAYOUT': 'Depto. de Projetos',
+  'MINUTA': 'Júlio César',
+  'INCORPORACAO': 'Júlio César',
+  'PARECER GEOTECNICO': 'Júlio César',
+  'GEOTECNICO': 'Júlio César',
+  'AVTO': 'Júlio César',
+  'ENERGIA': 'Júlio César',
+  'AGUA POTAVEL': 'Júlio César',
+  'ESGOTO': 'Júlio César',
+  'OUTORGA': 'Júlio César',
+  'GUARDA': 'Júlio César',
+  'ESTUDOS PRELIMINARES': 'Júlio / João Vitor / Projetos',
+  'CODIGO DE PRATICAS': 'Júlio / Depto. Projetos',
+  'ORCAMENTO': 'Depto. de Projetos',
+  'CRONOGRAMA': 'Depto. de Projetos',
+  'DESEMPENHO TERMICO': 'Júlio / Depto. Projetos',
+  'TERMICO': 'Júlio / Depto. Projetos',
+  'IMPLEMENTACAO': 'Júlio / Depto. Projetos',
+  'APROVADO PELO MUNICIPIO': 'Júlio / Depto. Projetos',
+  'CONVENCAO': 'Júlio César',
+  'LOTEAMENTO': 'Júlio César',
+  'REGISTRO DO LOTEAMENTO': 'Júlio César',
+  'ALVARA': 'Júlio César',
+  'LICENCA DE CONSTRUCAO': 'Júlio César',
+  'MANIFESTACAO': 'Júlio César',
+  'SUPRESSAO': 'Júlio César',
+  'CREA': 'Depto. de Projetos',
+  'PBQP': 'Depto. de Projetos',
+  'ART': 'Depto. de Projetos',
+  'RRT': 'Depto. de Projetos',
+  'NBR 15': 'Depto. de Projetos',
+  '15.575': 'Depto. de Projetos',
+  'CESSAO DE TECNOLOGIA': '—',
+  'MONITORAMENTO': '—',
+  'SERVIDAO': 'Júlio César',
+  'PROJETISTA ESTRUTURAL': 'Depto. de Projetos',
+};
+
+function getResponsavel(nomeDoc) {
+  if (!nomeDoc) return '—';
+  const n = nomeDoc.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  // Match por palavra-chave mais específica primeiro (chaves mais longas)
+  const chaves = Object.keys(RESPONSAVEIS).sort((a,b) => b.length - a.length);
+  for (const chave of chaves) {
+    const ck = chave.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if (n.includes(ck)) return RESPONSAVEIS[chave];
+  }
+  return '—';
 }
 
 // ── RENDER A PARTIR DO JSON PRÉ-PROCESSADO ────────────────────────────────────
@@ -788,22 +914,29 @@ function renderChecklistFromJson(tab, dados) {
   const itens = dados.itens;
   const stats = dados.stats || {};
 
-  // Coleta todas as colunas únicas (preserva ordem do primeiro item)
-  const todasColunas = itens.length > 0 ? Object.keys(itens[0].campos) : [];
+  // Cada "campo" do item é um DOCUMENTO do checklist.
+  // Invertemos: cada documento vira uma LINHA (antes era coluna).
+  // Coleta os documentos a partir do primeiro item (que representa o empreendimento)
+  const documentos = [];
+  for (const item of itens) {
+    for (const [nomeDoc, status] of Object.entries(item.campos)) {
+      documentos.push({ nome: nomeDoc, status: status });
+    }
+  }
 
   // ── Gráficos de anel ──────────────────────────────────────────────────────
   function ringColor(pct) {
-    if (pct >= 80) return '#2a9d5c';
-    if (pct >= 40) return '#f4a028';
-    return '#2e86de';
+    if (pct >= 80) return '#4f9d69';
+    if (pct >= 40) return '#d9930a';
+    return '#4a8bbf';
   }
   function ringHtml(pct, color) {
-    const r = 34, cx = 40, circ = 2 * Math.PI * r;
+    const r = 38, cx = 45, circ = 2 * Math.PI * r;
     const dash = (pct / 100) * circ;
     return `
-      <svg width="80" height="80" viewBox="0 0 80 80">
-        <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#e0edf2" stroke-width="7"/>
-        <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${color}" stroke-width="7"
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#dbe8ee" stroke-width="8"/>
+        <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${color}" stroke-width="8"
                 stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
       </svg>
       <div class="graf-pct">${pct}%</div>`;
@@ -814,43 +947,25 @@ function renderChecklistFromJson(tab, dados) {
   const pctApv  = stats.pct_aprovados   ?? 0;
   const consid  = stats.considerados    ?? 0;
 
-  // ── Tabela ────────────────────────────────────────────────────────────────
-  let tabelaHtml = '';
-  if (todasColunas.length > 0) {
-    // Modo: cada item = 1 linha, cada campo = 1 coluna
-    const headerCols = todasColunas.map(c =>
-      `<th style="font-size:10px;max-width:130px;white-space:normal;line-height:1.2">${c}</th>`
-    ).join('');
+  // ── Tabela: DOCUMENTOS em LINHAS, com Status + Responsável ─────────────────
+  const linhas = documentos.map(doc => `
+    <tr>
+      <td class="cl-doc">${doc.nome || '—'}</td>
+      <td>${badgeCl(doc.status)}</td>
+      <td class="cl-resp">${getResponsavel(doc.nome)}</td>
+    </tr>`).join('');
 
-    const linhas = itens.map(item => {
-      const cells = todasColunas.map(col =>
-        `<td>${badgeCl(item.campos[col] || null)}</td>`
-      ).join('');
-      return `<tr><td class="cl-doc">${item.nome || '—'}</td>${cells}</tr>`;
-    }).join('');
-
-    tabelaHtml = `
-      <div style="overflow-x:auto">
-        <table class="cl-table">
-          <thead><tr><th>Documento</th>${headerCols}</tr></thead>
-          <tbody>${linhas}</tbody>
-        </table>
-      </div>`;
-  } else {
-    // Modo fallback: lista vertical nome + campos
-    const linhas = itens.map(item => {
-      const campos = Object.entries(item.campos).map(([k,v]) =>
-        `<tr><td class="cl-doc">${k}</td><td>${badgeCl(v)}</td></tr>`
-      ).join('');
-      return `<tr><td colspan="2" style="background:var(--bg3);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:14px;color:var(--azul-esc);padding:10px 14px">${item.nome}</td></tr>${campos}`;
-    }).join('');
-
-    tabelaHtml = `
-      <table class="cl-table">
-        <thead><tr><th>Campo</th><th>Status</th></tr></thead>
-        <tbody>${linhas}</tbody>
-      </table>`;
-  }
+  const tabelaHtml = `
+    <table class="cl-table">
+      <thead>
+        <tr>
+          <th style="width:55%">Documento</th>
+          <th style="width:20%">Status</th>
+          <th style="width:25%">Responsável</th>
+        </tr>
+      </thead>
+      <tbody>${linhas}</tbody>
+    </table>`;
 
   contentEl.innerHTML = `
     <div class="aprov-resumo">
