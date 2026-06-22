@@ -109,17 +109,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 .badge-obra      {background:rgba(142,68,173,.12);color:#6c2f96}
 .badge-finalizada{background:rgba(42,157,92,.12);color:#1a6b40}
 
-/* BOTÕES DE AÇÃO DO CARD */
-.card-btns{border-top:1px solid var(--border2);padding:12px 20px;
-           display:flex;gap:8px;background:var(--bg2)}
-.card-btn{flex:1;padding:9px 8px;border-radius:7px;border:1.5px solid var(--border);
-          font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;
-          letter-spacing:.06em;text-transform:uppercase;color:var(--text3);
-          background:var(--branco);cursor:pointer;transition:all .15s;text-align:center;
-          white-space:nowrap}
-.card-btn:hover{border-color:var(--teal);color:var(--azul);background:rgba(143,220,210,.08)}
-.card-btn.primary{border-color:var(--azul);color:var(--branco);background:var(--azul)}
-.card-btn.primary:hover{background:var(--azul-esc);border-color:var(--azul-esc)}
+/* botões removidos — card inteiro é clicável */
 
 /* VAZIO */
 .vazio{text-align:center;padding:60px 20px;color:var(--text4);
@@ -210,11 +200,6 @@ function renderCard(emp) {
       <div class="card-prog">${prog}</div>
       <span class="card-badge badge-${emp.status_cor}">${emp.status_label}</span>
     </div>
-    <div class="card-btns">
-      <button class="card-btn" onclick="abrirAba('aprovacao','${emp.id}')">Aprovação</button>
-      <button class="card-btn" onclick="abrirAba('andamento','${emp.id}')">Andamento</button>
-      <button class="card-btn primary" onclick="abrirAba('documentacoes','${emp.id}')">Documentações</button>
-    </div>
   </div>`;
 }
 
@@ -238,13 +223,7 @@ function filtrar() {
     `${filtrados.length} de ${DATA.length} empreendimento${DATA.length !== 1 ? 's' : ''}`;
 }
 
-function abrirAba(aba, id) {
-  if (aba === 'documentacoes') {
-    window.open(`documentacoes.html?id=${encodeURIComponent(id)}`, '_blank');
-  } else {
-    window.open(`empreendimento.html?id=${encodeURIComponent(id)}&aba=${aba}`, '_blank');
-  }
-}
+
 
 async function init() {
   try {
