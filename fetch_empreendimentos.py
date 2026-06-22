@@ -496,9 +496,11 @@ def gerar_memorial(emp, tipo):
 def gerar_quadros_abnt(emp, unidades):
     """
     Gera QUADROS_ABNT__<NOME>__RV<N>.xlsx.
-    - CAPA:      insert_rows na linha 18 (antes do TOTAL), n-1 vezes
-    - QUADRO II: deleta linha 18 vazia, depois insert_rows na linha 18, n vezes
-    - INF PRELIMINARES: substitui placeholders diretamente (G10/G11 referenciam CAPA deslocada)
+    Correções aplicadas:
+    - CAPA: insert_rows antes do TOTAL, fórmulas corretas, merges e formatação preservados
+    - QUADRO II: bordas copiadas para todas as linhas de UH
+    - QUADRO I: referência CAPA!D{total_row} correta (linha TOTAL dinâmica)
+    - QUADROS IV A, IV B, IV B.1: fórmulas corretas por UH, linhas excedentes deletadas
     """
     try:
         from openpyxl import load_workbook
@@ -528,23 +530,26 @@ def gerar_quadros_abnt(emp, unidades):
     wb = load_workbook(out)
 
     def copiar_estilo(src_cell, dst_cell):
-        dst_cell.font         = _copy.copy(src_cell.font)
-        dst_cell.fill         = _copy.copy(src_cell.fill)
-        dst_cell.border       = _copy.copy(src_cell.border)
-        dst_cell.alignment    = _copy.copy(src_cell.alignment)
+        dst_cell.font          = _copy.copy(src_cell.font)
+        dst_cell.fill          = _copy.copy(src_cell.fill)
+        dst_cell.border        = _copy.copy(src_cell.border)
+        dst_cell.alignment     = _copy.copy(src_cell.alignment)
         dst_cell.number_format = src_cell.number_format
 
     # ── 1. CAPA ───────────────────────────────────────────────────────────────
-    # Template: L9=UH1, L10=TOTAL, L11=data, L13=assinatura, L14=resp, L15=crea
-    # Inserir n-1 linhas na posição 10 (antes do TOTAL)
+    # Template: L9=UH1, L10=TOTAL (merge B10:H10), L11=data (merge B11:H11),
+    #           L13=assin, L14=resp (merge B14:H14), L15=crea (merge B15:H15)
+    # Para n>1: inserir n-1 linhas na posição 10 (antes do TOTAL)
     ws_capa = wb["CAPA"]
 
     ws_capa["C3"] = f"{emp['rua']}, {emp['complemento']}; {emp['setor']} - {emp['cidade']}"
 
-    CAPA_TPL = 9    # linha da 1ª UH
-    CAPA_TOT = 10   # linha TOTAL (original)
+    CAPA_TPL = 9    # linha da 1ª UH no template
+    CAPA_TOT = 10   # linha TOTAL original
 
     if n > 1:
+        # Antes de inserir linhas, remover merges da linha TOTAL que serão deslocados
+        # (openpyxl ajusta merges automaticamente no insert_rows, mas garantimos)
         ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
         h = ws_capa.row_dimensions[CAPA_TPL].height
         for i in range(1, n):
@@ -554,9 +559,9 @@ def gerar_quadros_abnt(emp, unidades):
                               ws_capa.cell(row=nr,        column=col))
             ws_capa.row_dimensions[nr].height = h
 
-    total_row = CAPA_TPL + n   # linha TOTAL após inserção
+    total_row = CAPA_TPL + n   # linha TOTAL após inserção (10 para n=1, 11 para n=2, etc.)
 
-    # Preenche cada UH
+    # Preenche cada UH na CAPA
     for i, uh in enumerate(uhs):
         r          = CAPA_TPL + i
         area_const = round(uh["area_const_priv"] + uh["area_const_com"], 2)
@@ -569,7 +574,15 @@ def gerar_quadros_abnt(emp, unidades):
         ws_capa.cell(row=r, column=7).value = f"=F{r}"
         ws_capa.cell(row=r, column=8).value = f"=SUM(G{r}/G{total_row})"
 
-    # TOTAL — fórmulas cobrindo todas as UHs
+    # TOTAL — desmerge se necessário, escreve fórmulas, remerge
+    merge_str = f"B{total_row}:H{total_row}"
+    # Remover merge existente na linha total (caso já exista do template ou insert)
+    ranges_to_remove = [str(m) for m in ws_capa.merged_cells.ranges if str(m) == merge_str]
+    for m in list(ws_capa.merged_cells.ranges):
+        if str(m) == merge_str:
+            ws_capa.unmerge_cells(str(m))
+            break
+
     first, last = CAPA_TPL, CAPA_TPL + n - 1
     ws_capa.cell(row=total_row, column=4).value = f"=SUM(D{first}:D{last})"
     ws_capa.cell(row=total_row, column=5).value = f"=SUM(E{first}:E{last})"
@@ -577,12 +590,11 @@ def gerar_quadros_abnt(emp, unidades):
     ws_capa.cell(row=total_row, column=7).value = f"=SUM(G{first}:G{last})"
     ws_capa.cell(row=total_row, column=8).value = f"=SUM(H{first}:H{last})"
 
-    # Data e assinatura — substituir placeholders nas linhas deslocadas
-    # Após insert de n-1 linhas: data=total+1, assin=total+3, resp=total+4, crea=total+5
-    data_row = total_row + 1
-    resp_row = total_row + 3
-    crea_row = total_row + 4
+    # Corrigir referências D4 (área terreno = G do total) e D5 (área construída = D do total)
+    ws_capa["D4"] = f"=G{total_row}"
+    ws_capa["D5"] = f"=D{total_row}"
 
+    # Substituir placeholders no bloco de assinatura (linhas após total_row)
     for r in range(total_row + 1, total_row + 8):
         for col in range(1, 10):
             cell = ws_capa.cell(row=r, column=col)
@@ -600,12 +612,9 @@ def gerar_quadros_abnt(emp, unidades):
     n_un_str  = str(emp["n_unidades"]) if emp["n_unidades"] != "" else str(n)
     casas_str = f"CASA 01 A CASA {n:02d}" if n > 1 else "CASA 01"
 
-    # G10 e G11 referenciam CAPA!B14/B15 — que foram deslocados pelo insert_rows
-    # Substituir diretamente para garantir
     ws_ip["G10"] = emp.get("responsavel_tecnico", "")
     ws_ip["G11"] = emp.get("crea", "")
 
-    # Substituir placeholders de texto
     mapa_ip = {
         "{IMCORPORADOR}":           emp.get("incorporador", ""),
         "{DOC. INCORPORADOR}":      emp.get("doc_incorporador", ""),
@@ -618,7 +627,6 @@ def gerar_quadros_abnt(emp, unidades):
                 v = cell.value
                 for k, val in mapa_ip.items():
                     v = v.replace(k, str(val) if val else "")
-                # Ajuste específico de G22: "N UNIDADES ( CASA 01 A N)"
                 if "CASA 01 A" in v:
                     v = v.replace(f"CASA 01 A {n_un_str}", casas_str)
                 if v != cell.value:
@@ -627,44 +635,46 @@ def gerar_quadros_abnt(emp, unidades):
     # ── 3. QUADRO I ───────────────────────────────────────────────────────────
     ws_q1 = wb["QUADRO I"]
     ws_q1["C10"] = hoje_fmt
+    # C16 = soma da coluna D da CAPA (linha TOTAL dinâmica)
     ws_q1["C16"] = f"=CAPA!D{total_row}"
+    # Linha TOTAIS do QI (linha 39 no template) — referenciam CAPA!D{total_row}
+    ws_q1["C39"] = f"=CAPA!D{total_row}"
+    ws_q1["F39"] = f"=CAPA!D{total_row}"
+    ws_q1["G39"] = f"=CAPA!D{total_row}"
+    ws_q1["R39"] = f"=CAPA!D{total_row}"
+    ws_q1["S39"] = f"=CAPA!D{total_row}"
 
-    # ── 4. QUADRO II ─────────────────────────────────────────────────────────
-    # Template: L17=CASA01, L18=VAZIA, L19=TOTAIS
-    # Problema anterior: insert_rows(19) deixava L18 vazia entre dados e TOTAIS
-    # Solução: apagar L18 (delete_rows) e inserir n linhas na posição 18
+    # ── 4. QUADRO II ──────────────────────────────────────────────────────────
+    # Template: L17=CASA01, L18=linha vazia, L19=TOTAIS, L20=ÁREA REAL GLOBAL
+    # Estratégia: deletar L18 vazia, inserir n linhas em L18, copiar bordas para todas
     ws_q2 = wb["QUADRO II"]
     ws_q2["C10"] = hoje_fmt
 
     Q2_TPL   = 17   # linha CASA01 original
-    Q2_VAZIA = 18   # linha vazia do template — apagar antes de inserir
+    Q2_VAZIA = 18   # linha vazia — deletar
     Q2_TOT   = 19   # linha TOTAIS original
 
-    # 1. Apagar a linha 18 vazia
     ws_q2.delete_rows(Q2_VAZIA)
-    # Agora: L17=CASA01, L18=TOTAIS (subiu)
+    # Agora: L17=CASA01, L18=TOTAIS
 
-    # 2. Inserir n linhas antes dos TOTAIS (que agora está na linha 18)
     ws_q2.insert_rows(Q2_VAZIA, amount=n)
-    # Agora: L17=CASA01_orig, L18..17+n=novas, L18+n=TOTAIS
+    # Agora: L17=CASA01_tpl, L18..17+n=novas, 18+n=TOTAIS
 
-    q2_totais = Q2_TPL + n + 1   # linha TOTAIS após operações
+    q2_totais     = Q2_TPL + n + 1   # linha TOTAIS
+    q2_area_global = q2_totais + 1   # linha ÁREA REAL GLOBAL
 
-    # Copiar estilo da linha 17 para as novas linhas
     h2 = ws_q2.row_dimensions[Q2_TPL].height
-    for i in range(n):
-        nr = Q2_TPL + 1 + i   # linhas 18..17+n (a linha 17 original fica)
-        # Para a 1ª UH reutilizar a linha 17; para demais copiar estilo
-        if i == 0:
-            nr = Q2_TPL  # reutiliza linha 17 original
-        else:
-            for col in range(1, 24):
-                copiar_estilo(ws_q2.cell(row=Q2_TPL, column=col),
-                              ws_q2.cell(row=nr,      column=col))
-            ws_q2.row_dimensions[nr].height = h2
 
+    for i in range(n):
         r      = Q2_TPL + i
-        capa_r = CAPA_TPL + i   # linha correspondente na CAPA
+        nr     = r  # alias para clareza
+        capa_r = CAPA_TPL + i
+
+        # Copiar bordas/estilo da linha 17 para todas as linhas de UH (inclusive a 1ª)
+        for col in range(1, 24):
+            copiar_estilo(ws_q2.cell(row=Q2_TPL, column=col),
+                          ws_q2.cell(row=nr,      column=col))
+        ws_q2.row_dimensions[nr].height = h2
 
         ws_q2.cell(row=r, column=2).value  = f"CASA {i+1:02d}"
         ws_q2.cell(row=r, column=3).value  = f"=CAPA!D{capa_r}"
@@ -692,6 +702,148 @@ def gerar_quadros_abnt(emp, unidades):
             f"$V{f2}:$V{l2})"
         )
     ws_q2[f"V{q2_totais}"] = f"=SUM(V{f2}:V{l2})"
+
+    # Corrigir referências ÁREA REAL GLOBAL e ÁREA EQUIVALENTE GLOBAL
+    ws_q2[f"G{q2_area_global}"] = f"=T{q2_totais}"
+    ws_q2[f"S{q2_area_global}"] = f"=U{q2_totais}"
+
+    # ── 5. QUADROS IV A, IV B e IV B.1 ───────────────────────────────────────
+    # Template tem linha 14=UH1 e linhas 15+ com #REF! (para até 62 UHs).
+    # Estratégia: preencher apenas as linhas 14..13+n com fórmulas corretas,
+    # depois deletar as linhas excedentes (14+n até a linha antes de TOTAIS/fim).
+
+    # ── 5a. QUADRO IV A ───────────────────────────────────────────────────────
+    ws_4a = wb["QUADRO IV A"]
+    # Linha TOTAIS no IV A está na linha 76 (template)
+    # Linhas de UH: 14..75 (62 slots)
+    IVA_FIRST = 14
+    IVA_TOT   = 76   # linha TOTAIS (fixo no template)
+
+    # Preencher fórmulas para as n UHs reais
+    for i in range(n):
+        row_4a = IVA_FIRST + i
+        row_q2 = Q2_TPL + i   # linha correspondente no QUADRO II
+        ws_4a.cell(row=row_4a, column=2).value  = f"=('QUADRO II'!B{row_q2})"
+        ws_4a.cell(row=row_4a, column=3).value  = f"=('QUADRO II'!U{row_q2})"
+        ws_4a.cell(row=row_4a, column=4).value  = f"='QUADRO III'!L32*0.0161290322580645"
+        ws_4a.cell(row=row_4a, column=5).value  = f"=('QUADRO II'!N{row_q2})"
+        ws_4a.cell(row=row_4a, column=12).value = f"=ROUND(G{row_4a}*$K${IVA_TOT - n + IVA_FIRST},2)"
+        ws_4a.cell(row=row_4a, column=13).value = f"=('QUADRO II'!V{row_q2})"
+        ws_4a.cell(row=row_4a, column=15).value = f"=SUM(M{row_4a}-N{row_4a})"
+
+    # Deletar linhas excedentes (IVA_FIRST+n até IVA_TOT-1)
+    # Calcular quantas linhas excedentes há entre última UH real e TOTAIS
+    excesso_4a = IVA_TOT - (IVA_FIRST + n)
+    if excesso_4a > 0:
+        ws_4a.delete_rows(IVA_FIRST + n, excesso_4a)
+
+    # Linha TOTAIS do IV A após deleção das excedentes
+    nova_tot_4a = IVA_FIRST + n   # ex: n=2 → linha 16
+
+    # Corrigir referência $K$ na col L para apontar para nova linha de TOTAIS
+    for i in range(n):
+        row_4a = IVA_FIRST + i
+        ws_4a.cell(row=row_4a, column=12).value = f"=ROUND(G{row_4a}*$K${nova_tot_4a},2)"
+
+    # Atualizar fórmulas da linha TOTAIS do IV A
+    ws_4a[f"C{nova_tot_4a}"] = f"=SUM(C{IVA_FIRST}:C{IVA_FIRST+n-1})"
+    ws_4a[f"D{nova_tot_4a}"] = f"=SUM(D{IVA_FIRST}:D{IVA_FIRST+n-1})"
+    ws_4a[f"E{nova_tot_4a}"] = f"=SUM(E{IVA_FIRST}:E{IVA_FIRST+n-1})"
+    ws_4a[f"F{nova_tot_4a}"] = f"=SUMPRODUCT(F{IVA_FIRST}:F{IVA_FIRST+n-1},$O{IVA_FIRST}:$O{IVA_FIRST+n-1})"
+    ws_4a[f"M{nova_tot_4a}"] = f"=SUM(M{IVA_FIRST}:M{IVA_FIRST+n-1})"
+    ws_4a[f"O{nova_tot_4a}"] = f"=SUM(O{IVA_FIRST}:O{IVA_FIRST+n-1})"
+
+    # ── 5b. QUADRO IV B ───────────────────────────────────────────────────────
+    ws_4b = wb["QUADRO IV B"]
+    # Template: linha 14=UH1, linhas 15+ com #REF!
+    # Não há linha TOTAIS explícita — apenas as UHs seguidas de texto de observação
+    IVB_FIRST = 14
+
+    # Encontrar até onde vão as linhas de UH (procurar primeira linha sem border após L14)
+    # No template, há linhas até aprox 75 com bordas; calcular o total de slots
+    # A linha de texto "Designação da unidade" está acima (L12-L13)
+    # Slots disponíveis no template: contar linhas com border a partir de L15
+    ivb_slots = 0
+    for r in range(IVB_FIRST + 1, 200):
+        row_cells = list(ws_4b.iter_rows(min_row=r, max_row=r))[0]
+        has_border = any(c.border.left.border_style or c.border.right.border_style
+                         or c.border.top.border_style or c.border.bottom.border_style
+                         for c in row_cells)
+        has_content = any(c.value is not None for c in row_cells)
+        if not has_border and not has_content:
+            break
+        ivb_slots += 1
+    total_ivb_slots = 1 + ivb_slots  # inclui linha 14
+
+    # Preencher fórmulas para as n UHs reais
+    for i in range(n):
+        row_4b = IVB_FIRST + i
+        row_q2 = Q2_TPL + i
+        capa_r = CAPA_TPL + i
+        ws_4b.cell(row=row_4b, column=2).value = f"=('QUADRO II'!B{row_q2})"
+        ws_4b.cell(row=row_4b, column=3).value = f"=CAPA!D{capa_r}"
+        ws_4b.cell(row=row_4b, column=4).value = f"='QUADRO II'!D{row_q2}"
+        ws_4b.cell(row=row_4b, column=5).value = f"='QUADRO II'!F{row_q2}"
+        ws_4b.cell(row=row_4b, column=6).value = f"=('QUADRO II'!K{row_q2})+('QUADRO II'!R{row_q2})"
+        ws_4b.cell(row=row_4b, column=7).value = f"=SUM(E{row_4b}+F{row_4b})"
+        ws_4b.cell(row=row_4b, column=8).value = f"=('QUADRO II'!N{row_q2})"
+        ws_4b.cell(row=row_4b, column=9).value = f"=('QUADRO II'!V{row_q2})"
+
+    # Deletar linhas excedentes do IV B
+    excesso_4b = total_ivb_slots - n
+    if excesso_4b > 0:
+        ws_4b.delete_rows(IVB_FIRST + n, excesso_4b)
+
+    # ── 5c. QUADRO IV B.1 ─────────────────────────────────────────────────────
+    ws_4b1 = wb["QUADRO IV B.1"]
+    # Template: linha 15=UH1 (linha 14 é cabeçalho A B C D...), linhas 16+ com #REF!
+    IVB1_FIRST = 15
+
+    # Contar slots disponíveis
+    ivb1_slots = 0
+    for r in range(IVB1_FIRST + 1, 200):
+        row_cells = list(ws_4b1.iter_rows(min_row=r, max_row=r))[0]
+        has_border = any(c.border.left.border_style or c.border.right.border_style
+                         or c.border.top.border_style or c.border.bottom.border_style
+                         for c in row_cells)
+        has_content = any(c.value is not None for c in row_cells)
+        if not has_border and not has_content:
+            break
+        ivb1_slots += 1
+    total_ivb1_slots = 1 + ivb1_slots
+
+    for i in range(n):
+        row_b1 = IVB1_FIRST + i
+        row_q2 = Q2_TPL + i
+        capa_r = CAPA_TPL + i
+        row_4b = IVB_FIRST + i   # linha correspondente no IV B (após deleção, mesmo índice)
+        ws_4b1.cell(row=row_b1, column=2).value  = f"=('QUADRO II'!B{row_q2})"
+        ws_4b1.cell(row=row_b1, column=3).value  = f"=CAPA!D{capa_r}"
+        ws_4b1.cell(row=row_b1, column=4).value  = f"='QUADRO IV B'!D{row_4b}"
+        ws_4b1.cell(row=row_b1, column=5).value  = f"=SUM(C{row_b1}+D{row_b1})"
+        ws_4b1.cell(row=row_b1, column=6).value  = f"=('QUADRO II'!K{row_q2})+('QUADRO II'!R{row_q2})"
+        ws_4b1.cell(row=row_b1, column=7).value  = f"=SUM(E{row_b1}+F{row_b1})"
+        ws_4b1.cell(row=row_b1, column=8).value  = f"=G{row_b1}"
+        ws_4b1.cell(row=row_b1, column=10).value = f"=SUM(H{row_b1}+I{row_b1})"
+        ws_4b1.cell(row=row_b1, column=11).value = f"=('QUADRO II'!N{row_q2})"
+        ws_4b1.cell(row=row_b1, column=12).value = f"=('QUADRO II'!V{row_q2})"
+
+    # Deletar linhas excedentes do IV B.1
+    excesso_4b1 = total_ivb1_slots - n
+    if excesso_4b1 > 0:
+        ws_4b1.delete_rows(IVB1_FIRST + n, excesso_4b1)
+
+    # ── 6. QUADRO V — limpar linhas de grupos extras com #REF! ──────────────
+    # O template tem linhas L27=grupo1, L28..L32=grupos extras (para empreendimentos
+    # com múltiplos tipos de UH). Para empreendimentos com 1 tipo, limpar L28:L32.
+    ws_5 = wb["QUADRO V"]
+    # L27 referencia QUADRO II!F17 (1ª UH) e CAPA!H9 — já corretos
+    # L28:L32 têm #REF! do template — limpar valores (manter texto B/E/G intacto)
+    for r_v in range(28, 33):
+        for col_v in ["D", "F"]:
+            cell_v = ws_5[f"{col_v}{r_v}"]
+            if cell_v.value is not None and "#ref" in str(cell_v.value).lower():
+                cell_v.value = None
 
     wb.save(out)
     print(f"  Quadros ABNT: {out}")
