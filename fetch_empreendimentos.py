@@ -34,9 +34,12 @@ NOTION_DB    = os.environ.get("NOTION_DB_EMP", "")
 NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH", "")
 NOTION_DB_UH    = os.environ.get("NOTION_DB_UH", "")
 
-# BD de Checklists de Aprovacao — token e DBs proprios
-# Usa NOTION_TOKEN_CL se definido, senao cai no NOTION_TOKEN_EMP (mesmo workspace)
-NOTION_TOKEN_CL = os.environ.get("NOTION_TOKEN_CL", "") or os.environ.get("NOTION_TOKEN_EMP", "")
+# BD de Checklists de Aprovacao
+# Usa NOTION_TOKEN_CL se configurado, senao tenta NOTION_TOKEN_EMP (mesmo workspace)
+_token_cl_raw = os.environ.get("NOTION_TOKEN_CL", "").strip()
+_token_emp    = os.environ.get("NOTION_TOKEN_EMP", "").strip()
+NOTION_TOKEN_CL = _token_cl_raw if _token_cl_raw else _token_emp
+print(f"  TOKEN_CL: {'proprio' if _token_cl_raw else 'fallback para TOKEN_EMP'} (len={len(NOTION_TOKEN_CL)})")
 NOTION_DB_PRE_ANALISE = os.environ.get(
     "NOTION_DB_PRE_ANALISE", "387c5ab532d380fcb6d0d2cb563926b6"
 )
@@ -64,9 +67,8 @@ def _headers(token):
 
 HEADERS        = _headers(NOTION_TOKEN)
 HEADERS_UH     = _headers(NOTION_TOKEN_UH)
-# Checklists usam token proprio (NOTION_TOKEN_CL)
-# Se NOTION_TOKEN_CL nao configurado, reutiliza o token do EMP
-HEADERS_CL     = _headers(NOTION_TOKEN_CL or NOTION_TOKEN)
+# Checklists — token proprio ou fallback para EMP
+HEADERS_CL     = _headers(NOTION_TOKEN_CL)
 
 # ── Helpers de propriedades Notion ───────────────────────────────────────────
 
