@@ -547,23 +547,32 @@ def gerar_quadros_abnt(emp, unidades):
     CAPA_TPL = 9    # linha da 1ª UH no template
     CAPA_TOT = 10   # linha TOTAL original
 
+    # Capturar estilos ANTES do insert_rows para não perder a formatação original
+    h_uh  = ws_capa.row_dimensions[CAPA_TPL].height
+    h_tot = ws_capa.row_dimensions[CAPA_TOT].height
+    # Guardar estilo completo da linha TOTAL (bold, bordas thick, etc.)
+    estilo_total = {}
+    for col in range(1, 10):
+        src = ws_capa.cell(row=CAPA_TOT, column=col)
+        estilo_total[col] = {
+            "font":          _copy.copy(src.font),
+            "fill":          _copy.copy(src.fill),
+            "border":        _copy.copy(src.border),
+            "alignment":     _copy.copy(src.alignment),
+            "number_format": src.number_format,
+        }
+
     if n > 1:
         ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
 
     total_row = CAPA_TPL + n   # linha TOTAL após inserção (dinâmico para qualquer N)
 
-    # Remover merges espúrios que o insert_rows replica nas linhas de UH (L9..total_row-1).
-    # Usamos merged_cells.remove() porque a âncora das células copiadas não está registrada.
+    # Remover merges espúrios que o insert_rows replica nas linhas de UH (L9..total_row-1)
     for m in list(ws_capa.merged_cells.ranges):
         if CAPA_TPL <= m.min_row <= total_row - 1:
             ws_capa.merged_cells.remove(m)
 
-    # Copiar estilo da linha-template (L9) para TODAS as linhas de UH (qualquer N)
-    h_uh  = ws_capa.row_dimensions[CAPA_TPL].height
-    # Capturar também o estilo da linha TOTAL original (antes de ser sobrescrita)
-    # para aplicar na nova linha total_row
-    h_tot = ws_capa.row_dimensions[CAPA_TOT].height  # altura original da linha TOTAL
-
+    # Copiar estilo da linha UH1 (L9) para TODAS as linhas de UH
     for i in range(n):
         nr = CAPA_TPL + i
         for col in range(1, 10):
@@ -584,8 +593,7 @@ def gerar_quadros_abnt(emp, unidades):
         ws_capa.cell(row=r, column=7).value = f"=F{r}"
         ws_capa.cell(row=r, column=8).value = f"=SUM(G{r}/G{total_row})"
 
-    # TOTAL — garantir que não há merges na linha total_row antes de escrever fórmulas,
-    # depois aplicar o merge correto B{total_row}:H{total_row}
+    # TOTAL — remover merges existentes, reaplicar estilo original, reescrever fórmulas
     for m in list(ws_capa.merged_cells.ranges):
         if m.min_row == total_row:
             ws_capa.merged_cells.remove(m)
@@ -597,24 +605,36 @@ def gerar_quadros_abnt(emp, unidades):
     ws_capa.cell(row=total_row, column=7).value = f"=SUM(G{first}:G{last})"
     ws_capa.cell(row=total_row, column=8).value = f"=SUM(H{first}:H{last})"
 
+    # Reaplicar estilo original da linha TOTAL (capturado antes do insert)
+    for col, est in estilo_total.items():
+        dst = ws_capa.cell(row=total_row, column=col)
+        dst.font          = est["font"]
+        dst.fill          = est["fill"]
+        dst.border        = est["border"]
+        dst.alignment     = est["alignment"]
+        dst.number_format = est["number_format"]
+
     ws_capa.merge_cells(f"B{total_row}:H{total_row}")
     ws_capa.row_dimensions[total_row].height = h_tot
 
-    # Corrigir referências D4 (área terreno) e D5 (área construída) para linha TOTAL dinâmica
+    # Corrigir referências D4 (área terreno) e D5 (área construída)
     ws_capa["D4"] = f"=G{total_row}"
     ws_capa["D5"] = f"=D{total_row}"
 
-    # Substituir placeholders no bloco de assinatura — varrer toda a aba
-    # (as linhas de assinatura ficam em posições dinâmicas dependendo de N)
+    # Substituir placeholders no bloco de assinatura.
+    # Estratégia: localizar cada placeholder varrendo toda a aba por value,
+    # escrevendo diretamente na célula âncora (Cell, não MergedCell).
     for row_obj in ws_capa.iter_rows():
         for cell in row_obj:
-            if isinstance(cell.value, str) and any(p in cell.value for p in
-                    ["{CIDADE}", "{DATA HOJE}", "{RESPONSÁVEL TÉCNICO}", "{CREA}"]):
-                cell.value = (cell.value
-                    .replace("{CIDADE}", emp.get("cidade", ""))
-                    .replace("{DATA HOJE}", hoje_fmt)
-                    .replace("{RESPONSÁVEL TÉCNICO}", emp.get("responsavel_tecnico", ""))
-                    .replace("{CREA}", emp.get("crea", "")))
+            if not isinstance(cell.value, str):
+                continue
+            v = (cell.value
+                 .replace("{CIDADE}", emp.get("cidade", ""))
+                 .replace("{DATA HOJE}", hoje_fmt)
+                 .replace("{RESPONSÁVEL TÉCNICO}", emp.get("responsavel_tecnico", ""))
+                 .replace("{CREA}", emp.get("crea", "")))
+            if v != cell.value:
+                cell.value = v
 
     # ── 2. INFORMAÇÕES PRELIMINARES ───────────────────────────────────────────
     ws_ip = wb["INFORMAÇÕES PRELIMINARES"]
@@ -722,58 +742,57 @@ def gerar_quadros_abnt(emp, unidades):
     ws_q2[f"S{q2_area_global}"] = f"=U{q2_totais}"
 
     # ── 5. QUADROS IV A, IV B e IV B.1 ───────────────────────────────────────
-    # Template tem linha 14=UH1 e linhas 15+ com #REF! (para até 62 UHs).
-    # Estratégia: preencher apenas as linhas 14..13+n com fórmulas corretas,
-    # depois deletar as linhas excedentes (14+n até a linha antes de TOTAIS/fim).
+    # Função auxiliar genérica: ajusta qualquer quadro para N unidades.
+    # N <= slots_tpl → deleta excedentes
+    # N > slots_tpl  → insere linhas extras copiando estilo da UH1 do template
+    def ajustar_slots(ws, first, tot_tpl, n_uhs):
+        slots_tpl = tot_tpl - first
+        if n_uhs < slots_tpl:
+            ws.delete_rows(first + n_uhs, slots_tpl - n_uhs)
+        elif n_uhs > slots_tpl:
+            extras = n_uhs - slots_tpl
+            ws.insert_rows(tot_tpl, extras)
+            h_ref = ws.row_dimensions[first].height
+            for i in range(slots_tpl, n_uhs):
+                nr = first + i
+                for col in range(1, ws.max_column + 1):
+                    copiar_estilo(ws.cell(row=first, column=col),
+                                  ws.cell(row=nr,    column=col))
+                ws.row_dimensions[nr].height = h_ref
+        return first + n_uhs   # nova linha do TOTAIS
 
-    # ── 5a. QUADRO IV A ───────────────────────────────────────────────────────
+    # ── 5a. QUADRO IV A ── (62 slots, TOTAIS na L76) ──────────────────────────
     ws_4a = wb["QUADRO IV A"]
-    # Linha TOTAIS no IV A está na linha 76 (template)
-    # Linhas de UH: 14..75 (62 slots)
-    IVA_FIRST = 14
-    IVA_TOT   = 76   # linha TOTAIS (fixo no template)
+    IVA_FIRST   = 14
+    IVA_TOT_TPL = 76
 
-    # Preencher fórmulas para as n UHs reais
+    nova_tot_4a = ajustar_slots(ws_4a, IVA_FIRST, IVA_TOT_TPL, n)
+
     for i in range(n):
         row_4a = IVA_FIRST + i
-        row_q2 = Q2_TPL + i   # linha correspondente no QUADRO II
+        row_q2 = Q2_TPL + i
         ws_4a.cell(row=row_4a, column=2).value  = f"=('QUADRO II'!B{row_q2})"
         ws_4a.cell(row=row_4a, column=3).value  = f"=('QUADRO II'!U{row_q2})"
         ws_4a.cell(row=row_4a, column=4).value  = f"='QUADRO III'!L32*0.0161290322580645"
         ws_4a.cell(row=row_4a, column=5).value  = f"=('QUADRO II'!N{row_q2})"
-        ws_4a.cell(row=row_4a, column=12).value = f"=ROUND(G{row_4a}*$K${IVA_TOT - n + IVA_FIRST},2)"
+        ws_4a.cell(row=row_4a, column=12).value = f"=ROUND(G{row_4a}*$K${nova_tot_4a},2)"
         ws_4a.cell(row=row_4a, column=13).value = f"=('QUADRO II'!V{row_q2})"
         ws_4a.cell(row=row_4a, column=15).value = f"=SUM(M{row_4a}-N{row_4a})"
 
-    # Deletar linhas excedentes (IVA_FIRST+n até IVA_TOT-1)
-    # Calcular quantas linhas excedentes há entre última UH real e TOTAIS
-    excesso_4a = IVA_TOT - (IVA_FIRST + n)
-    if excesso_4a > 0:
-        ws_4a.delete_rows(IVA_FIRST + n, excesso_4a)
+    f4a, l4a = IVA_FIRST, IVA_FIRST + n - 1
+    ws_4a[f"C{nova_tot_4a}"] = f"=SUM(C{f4a}:C{l4a})"
+    ws_4a[f"D{nova_tot_4a}"] = f"=SUM(D{f4a}:D{l4a})"
+    ws_4a[f"E{nova_tot_4a}"] = f"=SUM(E{f4a}:E{l4a})"
+    ws_4a[f"F{nova_tot_4a}"] = f"=SUMPRODUCT(F{f4a}:F{l4a},$O{f4a}:$O{l4a})"
+    ws_4a[f"M{nova_tot_4a}"] = f"=SUM(M{f4a}:M{l4a})"
+    ws_4a[f"O{nova_tot_4a}"] = f"=SUM(O{f4a}:O{l4a})"
 
-    # Linha TOTAIS do IV A após deleção das excedentes
-    nova_tot_4a = IVA_FIRST + n   # ex: n=2 → linha 16
-
-    # Corrigir referência $K$ na col L para apontar para nova linha de TOTAIS
-    for i in range(n):
-        row_4a = IVA_FIRST + i
-        ws_4a.cell(row=row_4a, column=12).value = f"=ROUND(G{row_4a}*$K${nova_tot_4a},2)"
-
-    # Atualizar fórmulas da linha TOTAIS do IV A
-    ws_4a[f"C{nova_tot_4a}"] = f"=SUM(C{IVA_FIRST}:C{IVA_FIRST+n-1})"
-    ws_4a[f"D{nova_tot_4a}"] = f"=SUM(D{IVA_FIRST}:D{IVA_FIRST+n-1})"
-    ws_4a[f"E{nova_tot_4a}"] = f"=SUM(E{IVA_FIRST}:E{IVA_FIRST+n-1})"
-    ws_4a[f"F{nova_tot_4a}"] = f"=SUMPRODUCT(F{IVA_FIRST}:F{IVA_FIRST+n-1},$O{IVA_FIRST}:$O{IVA_FIRST+n-1})"
-    ws_4a[f"M{nova_tot_4a}"] = f"=SUM(M{IVA_FIRST}:M{IVA_FIRST+n-1})"
-    ws_4a[f"O{nova_tot_4a}"] = f"=SUM(O{IVA_FIRST}:O{IVA_FIRST+n-1})"
-
-    # ── 5b. QUADRO IV B ───────────────────────────────────────────────────────
+    # ── 5b. QUADRO IV B ── (62 slots UH + 1 linha vazia, TOTAIS na L77) ───────
     ws_4b = wb["QUADRO IV B"]
-    # Template: L14=UH1, L15..L75=slots #REF!, L76=linha vazia, L77=TOTAIS
-    # Slots de UH: 14..76 (62+1 = 63 linhas antes do TOTAIS)
-    IVB_FIRST     = 14
-    IVB_VAZIA_TPL = 76   # linha vazia antes do TOTAIS
-    IVB_TOT_TPL   = 77   # linha TOTAIS no template
+    IVB_FIRST   = 14
+    IVB_TOT_TPL = 77   # linha vazia (L76) inclusa como excedente
+
+    nova_tot_4b = ajustar_slots(ws_4b, IVB_FIRST, IVB_TOT_TPL, n)
 
     for i in range(n):
         row_4b = IVB_FIRST + i
@@ -788,36 +807,27 @@ def gerar_quadros_abnt(emp, unidades):
         ws_4b.cell(row=row_4b, column=8).value = f"=('QUADRO II'!N{row_q2})"
         ws_4b.cell(row=row_4b, column=9).value = f"=('QUADRO II'!V{row_q2})"
 
-    # Deletar linhas excedentes de UH + linha vazia (tudo entre última UH real e TOTAIS)
-    # Excedentes: de IVB_FIRST+n até IVB_TOT_TPL-1 (inclusive linha vazia)
-    excesso_4b = IVB_TOT_TPL - 1 - (IVB_FIRST + n - 1)  # = IVB_TOT_TPL - IVB_FIRST - n
-    if excesso_4b > 0:
-        ws_4b.delete_rows(IVB_FIRST + n, excesso_4b)
+    f4b, l4b = IVB_FIRST, IVB_FIRST + n - 1
+    ws_4b[f"C{nova_tot_4b}"] = f"=SUMPRODUCT(C{f4b}:C{l4b},$I{f4b}:$I{l4b})"
+    ws_4b[f"D{nova_tot_4b}"] = f"=SUMPRODUCT(D{f4b}:D{l4b},$I{f4b}:$I{l4b})"
+    ws_4b[f"E{nova_tot_4b}"] = f"=SUMPRODUCT(E{f4b}:E{l4b},$I{f4b}:$I{l4b})"
+    ws_4b[f"F{nova_tot_4b}"] = f"=SUMPRODUCT(F{f4b}:F{l4b},$I{f4b}:$I{l4b})"
+    ws_4b[f"G{nova_tot_4b}"] = f"=SUMPRODUCT(G{f4b}:G{l4b},$I{f4b}:$I{l4b})"
+    ws_4b[f"H{nova_tot_4b}"] = f"=SUMPRODUCT(H{f4b}:H{l4b},$I{f4b}:$I{l4b})"
+    ws_4b[f"I{nova_tot_4b}"] = f"=SUM(I{f4b}:I{l4b})"
 
-    # Após deleção: TOTAIS fica na linha IVB_FIRST + n
-    nova_tot_4b = IVB_FIRST + n
-    # Atualizar fórmulas da linha TOTAIS para o range correto
-    ultimo_slot_4b = nova_tot_4b - 1
-    ws_4b[f"C{nova_tot_4b}"] = f"=SUMPRODUCT(C{IVB_FIRST}:C{ultimo_slot_4b},$I{IVB_FIRST}:$I{ultimo_slot_4b})"
-    ws_4b[f"D{nova_tot_4b}"] = f"=SUMPRODUCT(D{IVB_FIRST}:D{ultimo_slot_4b},$I{IVB_FIRST}:$I{ultimo_slot_4b})"
-    ws_4b[f"E{nova_tot_4b}"] = f"=SUMPRODUCT(E{IVB_FIRST}:E{ultimo_slot_4b},$I{IVB_FIRST}:$I{ultimo_slot_4b})"
-    ws_4b[f"F{nova_tot_4b}"] = f"=SUMPRODUCT(F{IVB_FIRST}:F{ultimo_slot_4b},$I{IVB_FIRST}:$I{ultimo_slot_4b})"
-    ws_4b[f"G{nova_tot_4b}"] = f"=SUMPRODUCT(G{IVB_FIRST}:G{ultimo_slot_4b},$I{IVB_FIRST}:$I{ultimo_slot_4b})"
-    ws_4b[f"H{nova_tot_4b}"] = f"=SUMPRODUCT(H{IVB_FIRST}:H{ultimo_slot_4b},$I{IVB_FIRST}:$I{ultimo_slot_4b})"
-    ws_4b[f"I{nova_tot_4b}"] = f"=SUM(I{IVB_FIRST}:I{ultimo_slot_4b})"
-
-    # ── 5c. QUADRO IV B.1 ─────────────────────────────────────────────────────
+    # ── 5c. QUADRO IV B.1 ── (62 slots UH + 1 linha vazia, TOTAIS na L78) ─────
     ws_4b1 = wb["QUADRO IV B.1"]
-    # Template: L15=UH1, L16..L76=slots #REF!, L77=linha vazia, L78=TOTAIS
-    IVB1_FIRST     = 15
-    IVB1_VAZIA_TPL = 77
-    IVB1_TOT_TPL   = 78
+    IVB1_FIRST   = 15
+    IVB1_TOT_TPL = 78   # linha vazia (L77) inclusa como excedente
+
+    nova_tot_4b1 = ajustar_slots(ws_4b1, IVB1_FIRST, IVB1_TOT_TPL, n)
 
     for i in range(n):
         row_b1 = IVB1_FIRST + i
         row_q2 = Q2_TPL + i
         capa_r = CAPA_TPL + i
-        row_4b = IVB_FIRST + i   # linha correspondente no IV B (índices não mudaram)
+        row_4b = IVB_FIRST + i
         ws_4b1.cell(row=row_b1, column=2).value  = f"=('QUADRO II'!B{row_q2})"
         ws_4b1.cell(row=row_b1, column=3).value  = f"=CAPA!D{capa_r}"
         ws_4b1.cell(row=row_b1, column=4).value  = f"='QUADRO IV B'!D{row_4b}"
@@ -829,35 +839,46 @@ def gerar_quadros_abnt(emp, unidades):
         ws_4b1.cell(row=row_b1, column=11).value = f"=('QUADRO II'!N{row_q2})"
         ws_4b1.cell(row=row_b1, column=12).value = f"=('QUADRO II'!V{row_q2})"
 
-    # Deletar excedentes + linha vazia do IV B.1
-    excesso_4b1 = IVB1_TOT_TPL - 1 - (IVB1_FIRST + n - 1)
-    if excesso_4b1 > 0:
-        ws_4b1.delete_rows(IVB1_FIRST + n, excesso_4b1)
+    f4b1, l4b1 = IVB1_FIRST, IVB1_FIRST + n - 1
+    ws_4b1[f"C{nova_tot_4b1}"] = f"=SUMPRODUCT(C{f4b1}:C{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"D{nova_tot_4b1}"] = f"=SUMPRODUCT(D{f4b1}:D{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"E{nova_tot_4b1}"] = f"=SUMPRODUCT(E{f4b1}:E{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"F{nova_tot_4b1}"] = f"=SUMPRODUCT(F{f4b1}:F{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"G{nova_tot_4b1}"] = f"=SUMPRODUCT(G{f4b1}:G{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"H{nova_tot_4b1}"] = f"=SUMPRODUCT(H{f4b1}:H{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"I{nova_tot_4b1}"] = f"=SUMPRODUCT(I{f4b1}:I{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"J{nova_tot_4b1}"] = f"=SUMPRODUCT(J{f4b1}:J{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"K{nova_tot_4b1}"] = f"=SUMPRODUCT(K{f4b1}:K{l4b1},$L{f4b1}:$L{l4b1})"
+    ws_4b1[f"L{nova_tot_4b1}"] = f"=SUM(L{f4b1}:L{l4b1})"
 
-    nova_tot_4b1    = IVB1_FIRST + n
-    ultimo_slot_4b1 = nova_tot_4b1 - 1
-    ws_4b1[f"C{nova_tot_4b1}"] = f"=SUMPRODUCT(C{IVB1_FIRST}:C{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"D{nova_tot_4b1}"] = f"=SUMPRODUCT(D{IVB1_FIRST}:D{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"E{nova_tot_4b1}"] = f"=SUMPRODUCT(E{IVB1_FIRST}:E{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"F{nova_tot_4b1}"] = f"=SUMPRODUCT(F{IVB1_FIRST}:F{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"G{nova_tot_4b1}"] = f"=SUMPRODUCT(G{IVB1_FIRST}:G{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"H{nova_tot_4b1}"] = f"=SUMPRODUCT(H{IVB1_FIRST}:H{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"I{nova_tot_4b1}"] = f"=SUMPRODUCT(I{IVB1_FIRST}:I{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"J{nova_tot_4b1}"] = f"=SUMPRODUCT(J{IVB1_FIRST}:J{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"K{nova_tot_4b1}"] = f"=SUMPRODUCT(K{IVB1_FIRST}:K{ultimo_slot_4b1},$L{IVB1_FIRST}:$L{ultimo_slot_4b1})"
-    ws_4b1[f"L{nova_tot_4b1}"] = f"=SUM(L{IVB1_FIRST}:L{ultimo_slot_4b1})"
-
-    # ── 6. QUADRO V — limpar linhas de grupos extras com #REF! ──────────────
-    # O template tem linhas L27=grupo1, L28..L32=grupos extras (para empreendimentos
-    # com múltiplos tipos de UH). Para empreendimentos com 1 tipo, limpar L28:L32.
+    # ── 6. QUADRO V — atualizar referências e textos com N dinâmico ─────────
     ws_5 = wb["QUADRO V"]
-    # L27 referencia QUADRO II!F17 (1ª UH) e CAPA!H9 — já corretos
-    # L28:L32 têm #REF! do template — limpar valores (manter texto B/E/G intacto)
+
+    # D27 e F27 referenciam a 1ª linha de UH do QUADRO II e CAPA
+    # Para n=1: QUADRO II linha Q2_TPL, CAPA linha CAPA_TPL
+    # O template só tem 1 grupo (L27). Para empreendimentos homogêneos (1 tipo de UH)
+    # todas as unidades são idênticas — basta atualizar L27 e limpar L28:L32.
+    primeira_uh_q2   = Q2_TPL          # linha da 1ª UH no QUADRO II
+    primeira_uh_capa = CAPA_TPL        # linha da 1ª UH na CAPA
+
+    ws_5["D27"] = f"='QUADRO II'!F{primeira_uh_q2}"
+    ws_5["F27"] = f"=CAPA!H{primeira_uh_capa}"
+
+    # Atualizar texto de B27 — "A fração ideal 1 a N com área"
+    ws_5["B27"] = f"A fração ideal  1  a  {n} com área "
+
+    # Limpar linhas de grupos extras (L28:L32) — #REF! do template
+    from openpyxl.utils import column_index_from_string
     for r_v in range(28, 33):
-        for col_v in ["D", "F"]:
-            cell_v = ws_5[f"{col_v}{r_v}"]
-            if cell_v.value is not None and "#ref" in str(cell_v.value).lower():
+        for col_v in ["B", "D", "E", "F", "G"]:
+            cell_v = ws_5.cell(row=r_v, column=column_index_from_string(col_v))
+            if cell_v.value is not None:
                 cell_v.value = None
+
+    # Atualizar texto B36 — "CASAS 01 A N" automático
+    casas_b36 = f"CASA 01" if n == 1 else f"CASAS 01 A {n:02d}"
+    ws_5["B36"] = (f"{casas_b36} - CONFORME MEMORIAL DE INSTITUIÇÃO DE CONDOMÍNIO"
+                   f" E CERTIDÃO DE LANÇAMENTO.")
 
     wb.save(out)
     print(f"  Quadros ABNT: {out}")
