@@ -618,7 +618,20 @@ def gerar_quadros_abnt(emp, unidades):
         dst.number_format = est["number_format"]
 
     ws_capa.row_dimensions[total_row].height = h_tot
-    # NÃO aplicar merge_cells aqui — a linha TOTAL não é mergeada no template
+    # Reaplicar merges B:H no bloco de assinatura.
+    # O insert_rows desloca esses merges mas às vezes os perde quando colidem
+    # com o range de remoção de merges espúrios. Garantir que existem:
+    #   data       → total_row + 1
+    #   tracejado  → total_row + 3
+    #   responsável→ total_row + 4
+    #   CREA       → total_row + 5
+    for offset in [1, 3, 4, 5]:
+        r_ass = total_row + offset
+        # Remover merge existente na linha (se houver) antes de reaplicar
+        for m in list(ws_capa.merged_cells.ranges):
+            if m.min_row == r_ass:
+                ws_capa.merged_cells.remove(m)
+        ws_capa.merge_cells(f"B{r_ass}:H{r_ass}")
 
     # Corrigir referências D4 (área terreno) e D5 (área construída)
     ws_capa["D4"] = f"=G{total_row}"
