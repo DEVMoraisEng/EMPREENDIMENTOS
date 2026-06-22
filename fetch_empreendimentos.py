@@ -1,21 +1,25 @@
 """
 fetch_empreendimentos.py
 Morais Engenharia · Site de Empreendimentos
-v3 — Junho 2026
+v4 — Junho 2026
 
 Gera:
   data_emp.json                      — dados para o site
+  data_checklists.json               — checklists de aprovacao (Pre-Analise, Analise Definitiva, Contratacao)
   FRE__<NOME>__RV<N>.xlsx            — Ficha Resumo do Empreendimento
   CARTA_PROPOSTA__<NOME>__RV<N>.docx — Carta Proposta CEF
   MEMORIAL_HABITACAO__<NOME>__RV<N>.docx
   MEMORIAL_INFRAESTRUTURA__<NOME>__RV<N>.docx
   QUADROS_ABNT__<NOME>__RV<N>.xlsx   — Quadros NBR 12.721
 
-Segredos necessários (GitHub Actions Secrets):
-  NOTION_TOKEN_EMP  — token do BD EMPREENDIMENTOS
-  NOTION_DB_EMP     — ID do BD EMPREENDIMENTOS
-  NOTION_TOKEN_UH   — token do BD UNIDADES DO EMPREENDIMENTO
-  NOTION_DB_UH      — ID do BD UNIDADES DO EMPREENDIMENTO
+Segredos necessarios (GitHub Actions Secrets):
+  NOTION_TOKEN_EMP       — token do BD EMPREENDIMENTOS (e checklists)
+  NOTION_DB_EMP          — ID do BD EMPREENDIMENTOS
+  NOTION_TOKEN_UH        — token do BD UNIDADES DO EMPREENDIMENTO
+  NOTION_DB_UH           — ID do BD UNIDADES DO EMPREENDIMENTO
+  NOTION_DB_PRE_ANALISE  — ID do BD CHECKLIST PRE-ANALISE        (fallback: 387c5ab532d380fcb6d0d2cb563926b6)
+  NOTION_DB_ANALISE_DEF  — ID do BD CHECKLIST ANALISE DEFINITIVA (fallback: 387c5ab532d38040b1a4d3d3c4890235)
+  NOTION_DB_CONTRATACAO  — ID do BD CHECKLIST CONTRATACAO        (fallback: 387c5ab532d380378ed7ea77833705c3)
 """
 
 import os, json, requests, shutil, re, copy
@@ -29,17 +33,25 @@ NOTION_DB    = os.environ.get("NOTION_DB_EMP", "")
 NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH", "")
 NOTION_DB_UH    = os.environ.get("NOTION_DB_UH", "")
 
-# ── DEBUG TEMPORÁRIO — remover após confirmar token ──────────────────────────
-def _debug_token(nome, token):
-    if not token:
-        print(f"  DEBUG {nome}: VAZIO")
-    else:
-        print(f"  DEBUG {nome}: len={len(token)} inicio='{token[:8]}' fim='{token[-6:]}'")
+# BD de Checklists de Aprovacao — mesmo token do EMP, DBs separados
+# Os IDs abaixo sao fallback caso o secret nao esteja configurado
+NOTION_DB_PRE_ANALISE = os.environ.get(
+    "NOTION_DB_PRE_ANALISE", "387c5ab532d380fcb6d0d2cb563926b6"
+)
+NOTION_DB_ANALISE_DEF = os.environ.get(
+    "NOTION_DB_ANALISE_DEF", "387c5ab532d38040b1a4d3d3c4890235"
+)
+NOTION_DB_CONTRATACAO = os.environ.get(
+    "NOTION_DB_CONTRATACAO", "387c5ab532d380378ed7ea77833705c3"
+)
 
-_debug_token("NOTION_TOKEN_EMP", NOTION_TOKEN)
-_debug_token("NOTION_TOKEN_UH",  NOTION_TOKEN_UH)
-_debug_token("NOTION_DB_UH",     NOTION_DB_UH)
-# ── FIM DEBUG ─────────────────────────────────────────────────────────────────
+CHECKLISTS_CONFIG = {
+    "pre_analise":  {"db_id": NOTION_DB_PRE_ANALISE,  "label": "PRE-ANALISE"},
+    "analise_def":  {"db_id": NOTION_DB_ANALISE_DEF,  "label": "ANALISE DEFINITIVA"},
+    "contratacao":  {"db_id": NOTION_DB_CONTRATACAO,   "label": "CONTRATACAO"},
+}
+
+# (bloco de debug removido na v4)
 
 def _headers(token):
     return {
@@ -48,8 +60,10 @@ def _headers(token):
         "Notion-Version": "2022-06-28",
     }
 
-HEADERS    = _headers(NOTION_TOKEN)
-HEADERS_UH = _headers(NOTION_TOKEN_UH)
+HEADERS        = _headers(NOTION_TOKEN)
+HEADERS_UH     = _headers(NOTION_TOKEN_UH)
+# Checklists usam o mesmo token do EMP
+HEADERS_CL     = _headers(NOTION_TOKEN)
 
 # ── Helpers de propriedades Notion ───────────────────────────────────────────
 
@@ -915,6 +929,165 @@ def gerar_quadros_abnt(emp, unidades):
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+
+# ── Processa e exporta checklists de aprovação ────────────────────────────────
+
+STATUS_VALIDOS = {"SIM", "NÃO", "NAO", "SOLICITADO", "INEXISTE", "APROVADO"}
+
+def _get_nome_titulo(props):
+    """Retorna o valor do campo título (Name) de uma página Notion."""
+    for campo in ("Name", "name", "Nome", "NOME"):
+        p = props.get(campo)
+        if p and p.get("type") == "title":
+            itens = p.get("title", [])
+            return "".join(i.get("plain_text", "") for i in itens).strip()
+    # fallback: primeiro campo título encontrado
+    for p in props.values():
+        if p.get("type") == "title":
+            itens = p.get("title", [])
+            return "".join(i.get("plain_text", "") for i in itens).strip()
+    return ""
+
+def _get_select_valor(prop):
+    """Lê um campo select ou rich_text como string."""
+    if not prop:
+        return None
+    t = prop.get("type", "")
+    if t == "select":
+        s = prop.get("select")
+        return s.get("name", "").strip() if s else None
+    if t == "rich_text":
+        itens = prop.get("rich_text", [])
+        return "".join(i.get("plain_text", "") for i in itens).strip() or None
+    return None
+
+def processar_checklist_pagina(page):
+    """
+    Converte uma página do checklist em dict:
+      { "nome": <titulo>, "campos": { <campo>: <status> , ... } }
+    Campos do tipo 'title' são ignorados (é o nome da linha).
+    """
+    props = page.get("properties", {})
+    nome  = _get_nome_titulo(props)
+
+    campos = {}
+    for campo, prop in props.items():
+        if prop.get("type") == "title":
+            continue  # já virou 'nome'
+        valor = _get_select_valor(prop)
+        if valor is not None:
+            campos[campo] = valor
+
+    return {"nome": nome, "campos": campos}
+
+def calcular_stats(itens):
+    """
+    Conta SIM / NÃO / SOLICITADO / APROVADO / INEXISTE
+    por célula (cada campo de cada item = 1 célula).
+    INEXISTE é excluído dos denominadores de %, conforme solicitado.
+    """
+    total = sim = nao = solicitado = aprovado = inexiste = 0
+    for item in itens:
+        for v in item["campos"].values():
+            total += 1
+            vu = v.upper().strip()
+            if vu in ("SIM",):                  sim        += 1
+            elif vu in ("NÃO", "NAO"):          nao        += 1
+            elif vu == "SOLICITADO":             solicitado += 1
+            elif vu == "APROVADO":               aprovado   += 1
+            elif vu == "INEXISTE":               inexiste   += 1
+
+    considerados = total - inexiste  # denominador real
+    def pct(n): return round(n / considerados * 100, 1) if considerados else 0
+
+    return {
+        "total_celulas":   total,
+        "inexiste":        inexiste,
+        "considerados":    considerados,
+        "sim":             sim,
+        "nao":             nao,
+        "solicitado":      solicitado,
+        "aprovado":        aprovado,
+        "pct_iniciados":   pct(sim),
+        "pct_solicitados": pct(solicitado),
+        "pct_aprovados":   pct(aprovado),
+    }
+
+def gerar_checklists_json(nomes_empreendimentos):
+    """
+    Busca os 3 BDs de checklist no Notion, filtra pelo nome do empreendimento
+    e grava data_checklists.json.
+
+    Estrutura do JSON:
+    {
+      "updated_at": "...",
+      "checklists": {
+        "<nome_emp>": {
+          "pre_analise":  { "itens": [...], "stats": {...} },
+          "analise_def":  { "itens": [...], "stats": {...} },
+          "contratacao":  { "itens": [...], "stats": {...} }
+        },
+        ...
+      }
+    }
+    """
+    print("\n" + "─" * 50)
+    print("Buscando checklists de aprovação...")
+
+    # 1. Busca todas as páginas de cada BD (sem filtro — filtramos client-side
+    #    para evitar problemas com nomes parciais ou acentuação)
+    paginas_por_tab = {}
+    for tab_key, cfg in CHECKLISTS_CONFIG.items():
+        db_id = cfg["db_id"].replace("-", "")  # aceita com ou sem traços
+        paginas = buscar_paginas(db_id, HEADERS_CL, cfg["label"])
+        paginas_por_tab[tab_key] = paginas
+
+    # 2. Para cada empreendimento, localiza as linhas correspondentes
+    resultado = {}
+    nomes_upper = {n.strip().upper(): n for n in nomes_empreendimentos}
+
+    for tab_key, paginas in paginas_por_tab.items():
+        for page in paginas:
+            props = page.get("properties", {})
+            titulo = _get_nome_titulo(props).strip().upper()
+
+            # Tenta match exato ou contido
+            nome_match = None
+            if titulo in nomes_upper:
+                nome_match = nomes_upper[titulo]
+            else:
+                for nu, norig in nomes_upper.items():
+                    if titulo in nu or nu in titulo:
+                        nome_match = norig
+                        break
+
+            if not nome_match:
+                continue  # página não pertence a nenhum empreendimento da lista
+
+            item = processar_checklist_pagina(page)
+
+            resultado.setdefault(nome_match, {})
+            resultado[nome_match].setdefault(tab_key, {"itens": []})
+            resultado[nome_match][tab_key]["itens"].append(item)
+
+    # 3. Calcula stats por tab por empreendimento
+    for nome, tabs in resultado.items():
+        for tab_key, dados in tabs.items():
+            dados["stats"] = calcular_stats(dados["itens"])
+
+    saida = {
+        "updated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "checklists": resultado,
+    }
+
+    with open("data_checklists.json", "w", encoding="utf-8") as f:
+        json.dump(saida, f, ensure_ascii=False, indent=2)
+
+    total_tabs = sum(len(tabs) for tabs in resultado.values())
+    print(f"data_checklists.json: {len(resultado)} empreendimento(s), {total_tabs} tab(s) com dados")
+    return resultado
+
+
 def main():
     print("=" * 60)
     print("fetch_empreendimentos.py — Morais Engenharia  v3")
@@ -968,6 +1141,14 @@ def main():
 
     print(f"\n{'=' * 60}")
     print(f"data_emp.json: {len(empreendimentos)} empreendimento(s)")
+    print("=" * 60)
+
+    # ── 4. Gera checklists de aprovação ──────────────────────────────────────
+    nomes = [e["nome"] for e in empreendimentos]
+    gerar_checklists_json(nomes)
+
+    print(f"\n{'=' * 60}")
+    print("Concluido!")
     print("=" * 60)
 
 if __name__ == "__main__":

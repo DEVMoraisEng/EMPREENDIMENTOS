@@ -201,7 +201,7 @@ function renderCard(emp) {
   return `
   <div class="card" data-id="${emp.id}">
     <div class="card-status-bar ${emp.status_cor}"></div>
-    <div class="card-body">
+    <div class="card-body" onclick="window.open('empreendimento.html?id=${emp.id}','_blank')" style="cursor:pointer">
       <div class="card-nome">${emp.nome}</div>
       <div class="card-rv">
         <span class="${rvClass}">${rvLabel}</span>
@@ -240,9 +240,9 @@ function filtrar() {
 
 function abrirAba(aba, id) {
   if (aba === 'documentacoes') {
-    window.location.href = `documentacoes.html?id=${encodeURIComponent(id)}`;
+    window.open(`documentacoes.html?id=${encodeURIComponent(id)}`, '_blank');
   } else {
-    alert(`A aba "${aba.charAt(0).toUpperCase() + aba.slice(1)}" está em desenvolvimento.\nEstará disponível em breve.`);
+    window.open(`empreendimento.html?id=${encodeURIComponent(id)}&aba=${aba}`, '_blank');
   }
 }
 
