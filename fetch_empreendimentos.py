@@ -562,15 +562,16 @@ def gerar_quadros_abnt(emp, unidades):
             "number_format": src.number_format,
         }
 
-    if n > 1:
-        ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
-
     total_row = CAPA_TPL + n   # linha TOTAL após inserção (dinâmico para qualquer N)
 
-    # Remover merges espúrios que o insert_rows replica nas linhas de UH (L9..total_row-1)
-    for m in list(ws_capa.merged_cells.ranges):
-        if CAPA_TPL <= m.min_row <= total_row - 1:
-            ws_capa.merged_cells.remove(m)
+    if n > 1:
+        ws_capa.insert_rows(CAPA_TOT, amount=n - 1)
+        # No template, linhas 9 e 10 não têm merges — qualquer merge que apareça
+        # nelas após o insert é espúrio (criado pelo openpyxl ao copiar linhas).
+        # Linhas 11+ (assinatura) têm merges legítimos deslocados corretamente.
+        for m in list(ws_capa.merged_cells.ranges):
+            if CAPA_TPL <= m.min_row <= total_row - 1:
+                ws_capa.merged_cells.remove(m)
 
     # Copiar estilo da linha UH1 (L9) para TODAS as linhas de UH
     for i in range(n):
@@ -593,7 +594,9 @@ def gerar_quadros_abnt(emp, unidades):
         ws_capa.cell(row=r, column=7).value = f"=F{r}"
         ws_capa.cell(row=r, column=8).value = f"=SUM(G{r}/G{total_row})"
 
-    # TOTAL — remover merges existentes, reaplicar estilo original, reescrever fórmulas
+    # TOTAL — o template NÃO tem merge na linha TOTAL (cada célula B-H é independente).
+    # Garantir que não há merge espúrio nessa linha (criado pelo insert_rows),
+    # escrever fórmulas e reaplicar o estilo original capturado antes do insert.
     for m in list(ws_capa.merged_cells.ranges):
         if m.min_row == total_row:
             ws_capa.merged_cells.remove(m)
@@ -614,8 +617,8 @@ def gerar_quadros_abnt(emp, unidades):
         dst.alignment     = est["alignment"]
         dst.number_format = est["number_format"]
 
-    ws_capa.merge_cells(f"B{total_row}:H{total_row}")
     ws_capa.row_dimensions[total_row].height = h_tot
+    # NÃO aplicar merge_cells aqui — a linha TOTAL não é mergeada no template
 
     # Corrigir referências D4 (área terreno) e D5 (área construída)
     ws_capa["D4"] = f"=G{total_row}"
