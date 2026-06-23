@@ -124,6 +124,31 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
   .filtro-bar{gap:8px}
   .filtro-input,.filtro-select{width:100%}
 }
+
+/* SEÇÃO MANUAIS */
+.manuais-sec{padding:0 24px 40px}
+.manuais-sec-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;
+                   color:var(--azul-esc);letter-spacing:.02em;margin-bottom:14px;
+                   display:flex;align-items:center;gap:10px}
+.manuais-sec-title::after{content:'';flex:1;height:1.5px;background:var(--border2)}
+.manuais-grid-idx{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.manual-card-idx{display:flex;align-items:center;gap:14px;padding:16px 18px;
+                 background:var(--branco);border:1.5px solid var(--border2);
+                 border-radius:12px;text-decoration:none;transition:all .15s;cursor:pointer}
+.manual-card-idx:hover{border-color:var(--teal);box-shadow:0 4px 16px rgba(41,87,120,.08);
+                       transform:translateY(-1px)}
+.manual-card-ico{width:40px;height:40px;flex-shrink:0;border-radius:9px;
+                 background:rgba(143,220,210,.15);display:flex;
+                 align-items:center;justify-content:center}
+.manual-card-ico svg{width:20px;height:20px;color:var(--azul)}
+.manual-card-txt{flex:1;min-width:0}
+.manual-card-nome{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;
+                  color:var(--azul-esc);letter-spacing:.01em}
+.manual-card-desc{font-size:12px;color:var(--text3);margin-top:2px;line-height:1.3}
+.manual-card-arrow{width:16px;height:16px;color:var(--text4);flex-shrink:0;transition:color .15s}
+.manual-card-idx:hover .manual-card-arrow{color:var(--teal)}
+@media(max-width:640px){.manuais-grid-idx{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -142,16 +167,6 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
   <div class="updated" id="updated-at"></div>
 </div>
 
-<!-- BANNER DE MANUAIS -->
-<div class="manuais-bar">
-  <span class="manuais-bar-lbl" style="display:flex;align-items:center;gap:5px">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--azul)"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-    Manuais
-  </span>
-  <a class="manual-pill" href="MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf" target="_blank">↗ Documentações para Aprovação</a>
-  <a class="manual-pill" href="MANUAL DE PROJETOS.pdf" target="_blank">↗ Projetos</a>
-  <a class="manual-pill" href="MANUAL ARMAZENAGEM E ENVIO DE ARQUIVOS.pdf" target="_blank">↗ Armazenagem e Envio de Arquivos</a>
-</div>
 
 <div class="main">
   <div class="filtro-bar">
@@ -172,6 +187,48 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
     <span class="filtro-count" id="filtro-count"></span>
   </div>
   <div class="grid" id="grid"></div>
+
+<!-- SEÇÃO DE MANUAIS -->
+<div class="manuais-sec">
+  <div class="manuais-sec-title">Manuais</div>
+  <div class="manuais-grid-idx">
+
+    <a class="manual-card-idx" href="MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf" target="_blank">
+      <div class="manual-card-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div class="manual-card-txt">
+        <div class="manual-card-nome">Manual de Documentações</div>
+        <div class="manual-card-desc">Responsabilidade de preenchimento para aprovação CEF / PMCMV</div>
+      </div>
+      <svg class="manual-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+    </a>
+
+    <a class="manual-card-idx" href="MANUAL DE PROJETOS.pdf" target="_blank">
+      <div class="manual-card-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      </div>
+      <div class="manual-card-txt">
+        <div class="manual-card-nome">Manual de Projetos</div>
+        <div class="manual-card-desc">Requisitos e padrões dos projetos do empreendimento</div>
+      </div>
+      <svg class="manual-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+    </a>
+
+    <a class="manual-card-idx" href="MANUAL ARMAZENAGEM E ENVIO DE ARQUIVOS.pdf" target="_blank">
+      <div class="manual-card-ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="manual-card-txt">
+        <div class="manual-card-nome">Armazenagem e Envio</div>
+        <div class="manual-card-desc">Padrão de armazenagem e envio de arquivos</div>
+      </div>
+      <svg class="manual-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+    </a>
+
+  </div>
+</div>
+
 </div>
 
 <script>
