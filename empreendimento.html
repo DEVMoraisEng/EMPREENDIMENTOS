@@ -450,7 +450,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
           </div>
           <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
         </a>
-        <a href="MANUAL%20DE%20PROJETOS.pdf" target="_blank" class="manual-btn">
+        <a href="MANUAL_DE_PROJETOS.pdf" target="_blank" class="manual-btn">
           <div class="manual-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
           </div>
@@ -460,7 +460,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
           </div>
           <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
         </a>
-        <a href="MANUAL%20ARMAZENAGEM%20E%20ENVIO%20DE%20ARQUIVOS.pdf" target="_blank" class="manual-btn">
+        <a href="MANUAL_ARMAZENAGEM_E_ENVIO_DE_ARQUIVOS.pdf" target="_blank" class="manual-btn">
           <div class="manual-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </div>
@@ -814,8 +814,10 @@ function converterPaginasNotion(pages) {
     stats: {
       total_celulas: total, inexiste, considerados,
       sim, nao, solicitado, aprovado,
-      pct_iniciados:   pct(sim),
-      pct_solicitados: pct(solicitado),
+      iniciados: sim + aprovado,
+      solicitados: solicitado + aprovado,
+      pct_iniciados:   pct(sim + aprovado),
+      pct_solicitados: pct(solicitado + aprovado),
       pct_aprovados:   pct(aprovado),
     }
   };
@@ -1021,14 +1023,14 @@ function renderChecklistFromJson(tab, dados) {
   contentEl.innerHTML = `
     <div class="aprov-resumo">
       <div class="graf-card">
-        <div class="graf-title">Iniciados (SIM vs NÃO)</div>
+        <div class="graf-title">Iniciados (SIM + APROVADO)</div>
         <div class="graf-ring-wrap">${ringHtml(pctIni, ringColor(pctIni))}</div>
-        <div class="graf-sub"><span>${stats.sim ?? 0}</span> de ${consid} itens considerados</div>
+        <div class="graf-sub"><span>${stats.iniciados ?? 0}</span> de ${consid} itens considerados</div>
       </div>
       <div class="graf-card">
         <div class="graf-title">Solicitados</div>
         <div class="graf-ring-wrap">${ringHtml(pctSol, ringColor(pctSol))}</div>
-        <div class="graf-sub"><span>${stats.solicitado ?? 0}</span> de ${consid} itens considerados</div>
+        <div class="graf-sub"><span>${stats.solicitados ?? 0}</span> de ${consid} itens considerados</div>
       </div>
       <div class="graf-card">
         <div class="graf-title">Aprovados (100%)</div>
