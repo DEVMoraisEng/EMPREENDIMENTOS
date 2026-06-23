@@ -53,7 +53,10 @@ jobs:
                                -o -name "CARTA_PROPOSTA__*.docx" \
                                -o -name "MEMORIAL_HABITACAO__*.docx" \
                                -o -name "MEMORIAL_INFRAESTRUTURA__*.docx" \
-                               -o -name "QUADROS_ABNT__*.xlsx" \) \
+                               -o -name "QUADROS_ABNT__*.xlsx" \
+                               -o -name "CODIGO_BOAS_PRATICAS__*.docx" \
+                               -o -name "DECLARACAO_ABNT__*.docx" \
+                               -o -name "PARECER_ESTRUTURAL__*.docx" \) \
                -exec cp {} dist/ \;
 
           # Copia modelos originais renomeando espaços → underscores (alinha ao HTML)
@@ -62,14 +65,17 @@ jobs:
           cp "MEMORIAL DESCRITIVO DE HABITACAO.doc"    dist/MEMORIAL_DESCRITIVO_DE_HABITACAO.doc    2>/dev/null || true
           cp "MEMORIAL DESCRITIVO INFRAESTRUTURA.doc"  dist/MEMORIAL_DESCRITIVO_INFRAESTRUTURA.doc  2>/dev/null || true
           cp "QUADROS ABNT.xlsx"                       dist/QUADROS_ABNT.xlsx                       2>/dev/null || true
+          cp "CÓDIGO DE BOAS PRÁTICAS.docx"           dist/CODIGO_DE_BOAS_PRATICAS.docx           2>/dev/null || true
+          cp "CODIGO DE BOAS PRATICAS.docx"            dist/CODIGO_DE_BOAS_PRATICAS.docx           2>/dev/null || true
+          cp "DECLARAÇÃO DE ATENDIMENTO ABNT.doc"        dist/DECLARACAO_DE_ATENDIMENTO_ABNT.doc     2>/dev/null || true
+          cp "DECLARAÇÃO DE ATENDIMENTO ABNT.docx"       dist/DECLARACAO_DE_ATENDIMENTO_ABNT.docx    2>/dev/null || true
+          cp "PARECER ESTRUTURAL.docx"                   dist/PARECER_ESTRUTURAL.docx                2>/dev/null || true
 
           # Copia manuais PDF renomeando espaços → underscores
           cp "MANUAL FRE.pdf"                          dist/MANUAL_FRE.pdf                          2>/dev/null || true
           cp "MANUAL CARTA PROPOSTA.pdf"               dist/MANUAL_CARTA_PROPOSTA.pdf               2>/dev/null || true
           cp "MANUAL MEMORIAL HABITACAO.pdf"           dist/MANUAL_MEMORIAL_HABITACAO.pdf           2>/dev/null || true
           cp "MANUAL MEMORIAL INFRAESTRUTURA.pdf"      dist/MANUAL_MEMORIAL_INFRAESTRUTURA.pdf      2>/dev/null || true
-          cp "MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf" dist/MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf 2>/dev/null || true
-          cp "MANUAL_DE_PROJETOS.pdf"                  dist/MANUAL_DE_PROJETOS.pdf                  2>/dev/null || true
 
           echo "--- Conteúdo do dist/ ---"
           ls -lh dist/
