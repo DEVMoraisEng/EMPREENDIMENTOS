@@ -73,15 +73,19 @@ jobs:
           cp "PARECER ESTRUTURAL.docx"                   dist/PARECER_ESTRUTURAL.docx                2>/dev/null || true
 
           # Copia manuais PDF renomeando espaços → underscores
-          cp "MANUAL FRE.pdf"                          dist/MANUAL_FRE.pdf                          2>/dev/null || true
-          cp "MANUAL CARTA PROPOSTA.pdf"               dist/MANUAL_CARTA_PROPOSTA.pdf               2>/dev/null || true
-          cp "MANUAL MEMORIAL HABITACAO.pdf"           dist/MANUAL_MEMORIAL_HABITACAO.pdf           2>/dev/null || true
-          cp "MANUAL MEMORIAL INFRAESTRUTURA.pdf"      dist/MANUAL_MEMORIAL_INFRAESTRUTURA.pdf      2>/dev/null || true
-          cp "MANUAL CODIGO DE BOAS PRATICAS.pdf"      dist/MANUAL_CODIGO_DE_BOAS_PRATICAS.pdf      2>/dev/null || true
-          cp "MANUAL - QUADROS ABNT.pdf"               dist/MANUAL_QUADROS_ABNT.pdf                 2>/dev/null || true
-          cp "MANUAL PARECER ESTRUTURAL.pdf"           dist/MANUAL_PARECER_ESTRUTURAL.pdf           2>/dev/null || true
-          cp "MANUAL DE PROJETOS.pdf"                  dist/MANUAL_DE_PROJETOS.pdf                  2>/dev/null || true
+          cp "MANUAL FRE.pdf"                             dist/MANUAL_FRE.pdf                             2>/dev/null || true
+          cp "MANUAL CARTA PROPOSTA.pdf"                  dist/MANUAL_CARTA_PROPOSTA.pdf                  2>/dev/null || true
+          cp "MANUAL MEMORIAL HABITACAO.pdf"              dist/MANUAL_MEMORIAL_HABITACAO.pdf              2>/dev/null || true
+          cp "MANUAL MEMORIAL INFRAESTRUTURA.pdf"         dist/MANUAL_MEMORIAL_INFRAESTRUTURA.pdf         2>/dev/null || true
+          cp "MANUAL CODIGO DE BOAS PRATICAS.pdf"         dist/MANUAL_CODIGO_DE_BOAS_PRATICAS.pdf         2>/dev/null || true
+          cp "MANUAL QUADROS ABNT.pdf"                    dist/MANUAL_QUADROS_ABNT.pdf                    2>/dev/null || true
+          cp "MANUAL - QUADROS ABNT.pdf"                  dist/MANUAL_QUADROS_ABNT.pdf                    2>/dev/null || true
+          cp "MANUAL PARECER ESTRUTURAL.pdf"              dist/MANUAL_PARECER_ESTRUTURAL.pdf              2>/dev/null || true
+          cp "MANUAL DECLARACAO ABNT.pdf"                 dist/MANUAL_DECLARACAO_ABNT.pdf                 2>/dev/null || true
+          cp "MANUAL DECLARAÇÃO ABNT.pdf"                 dist/MANUAL_DECLARACAO_ABNT.pdf                 2>/dev/null || true
+          cp "MANUAL DE PROJETOS.pdf"                     dist/MANUAL_DE_PROJETOS.pdf                     2>/dev/null || true
           cp "MANUAL ARMAZENAGEM E ENVIO DE ARQUIVOS.pdf" dist/MANUAL_ARMAZENAGEM_E_ENVIO_DE_ARQUIVOS.pdf 2>/dev/null || true
+          cp "MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf"    dist/MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf    2>/dev/null || true
 
           echo "--- Conteúdo do dist/ ---"
           ls -lh dist/
