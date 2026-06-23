@@ -1135,23 +1135,32 @@ def processar_checklist_pagina(page):
 
 def calcular_stats(itens):
     """
-    Conta SIM / NÃO / SOLICITADO / APROVADO / INEXISTE
-    por célula (cada campo de cada item = 1 célula).
-    INEXISTE é excluído dos denominadores de %, conforme solicitado.
+    Conta status por célula com lógica hierárquica:
+    - Iniciados   = SIM + SOLICITADO + APROVADO + EM ANDAMENTO + EM APROVAÇÃO
+    - Solicitados = SOLICITADO + EM APROVAÇÃO + APROVADO (já foram solicitados)
+    - Aprovados   = só APROVADO
+    INEXISTE é excluído do denominador.
     """
     total = sim = nao = solicitado = aprovado = inexiste = 0
+    em_andamento = em_aprovacao = 0
     for item in itens:
         for v in item["campos"].values():
+            if not v: continue
             total += 1
             vu = v.upper().strip()
-            if vu in ("SIM",):                  sim        += 1
-            elif vu in ("NÃO", "NAO"):          nao        += 1
-            elif vu == "SOLICITADO":             solicitado += 1
-            elif vu == "APROVADO":               aprovado   += 1
-            elif vu == "INEXISTE":               inexiste   += 1
+            if vu == "SIM":                            sim          += 1
+            elif vu in ("NÃO", "NAO"):                 nao          += 1
+            elif vu == "SOLICITADO":                   solicitado   += 1
+            elif vu == "APROVADO":                     aprovado     += 1
+            elif vu == "INEXISTE":                     inexiste     += 1
+            elif vu == "EM ANDAMENTO":                 em_andamento += 1
+            elif vu in ("EM APROVAÇÃO", "EM APROVACAO"): em_aprovacao += 1
 
-    considerados = total - inexiste  # denominador real
+    considerados = total - inexiste
     def pct(n): return round(n / considerados * 100, 1) if considerados else 0
+
+    iniciados  = sim + solicitado + aprovado + em_andamento + em_aprovacao
+    ja_solicit = solicitado + em_aprovacao + aprovado
 
     return {
         "total_celulas":   total,
@@ -1161,8 +1170,12 @@ def calcular_stats(itens):
         "nao":             nao,
         "solicitado":      solicitado,
         "aprovado":        aprovado,
-        "pct_iniciados":   pct(sim),
-        "pct_solicitados": pct(solicitado),
+        "em_andamento":    em_andamento,
+        "em_aprovacao":    em_aprovacao,
+        "iniciados":       iniciados,
+        "ja_solicit":      ja_solicit,
+        "pct_iniciados":   pct(iniciados),
+        "pct_solicitados": pct(ja_solicit),
         "pct_aprovados":   pct(aprovado),
     }
 
