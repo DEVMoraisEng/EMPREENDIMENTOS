@@ -36,6 +36,7 @@ jobs:
           NOTION_DB_PRE_ANALISE: ${{ secrets.NOTION_DB_PRE_ANALISE }}
           NOTION_DB_ANALISE_DEF: ${{ secrets.NOTION_DB_ANALISE_DEF }}
           NOTION_DB_CONTRATACAO: ${{ secrets.NOTION_DB_CONTRATACAO }}
+          NOTION_DB_PROJETOS:    ${{ secrets.NOTION_DB_PROJETOS }}
         run: python fetch_empreendimentos.py
 
       - name: Preparar dist/
@@ -76,6 +77,11 @@ jobs:
           cp "MANUAL CARTA PROPOSTA.pdf"               dist/MANUAL_CARTA_PROPOSTA.pdf               2>/dev/null || true
           cp "MANUAL MEMORIAL HABITACAO.pdf"           dist/MANUAL_MEMORIAL_HABITACAO.pdf           2>/dev/null || true
           cp "MANUAL MEMORIAL INFRAESTRUTURA.pdf"      dist/MANUAL_MEMORIAL_INFRAESTRUTURA.pdf      2>/dev/null || true
+          cp "MANUAL CODIGO DE BOAS PRATICAS.pdf"      dist/MANUAL_CODIGO_DE_BOAS_PRATICAS.pdf      2>/dev/null || true
+          cp "MANUAL - QUADROS ABNT.pdf"               dist/MANUAL_QUADROS_ABNT.pdf                 2>/dev/null || true
+          cp "MANUAL PARECER ESTRUTURAL.pdf"           dist/MANUAL_PARECER_ESTRUTURAL.pdf           2>/dev/null || true
+          cp "MANUAL DE PROJETOS.pdf"                  dist/MANUAL_DE_PROJETOS.pdf                  2>/dev/null || true
+          cp "MANUAL ARMAZENAGEM E ENVIO DE ARQUIVOS.pdf" dist/MANUAL_ARMAZENAGEM_E_ENVIO_DE_ARQUIVOS.pdf 2>/dev/null || true
 
           echo "--- Conteúdo do dist/ ---"
           ls -lh dist/
