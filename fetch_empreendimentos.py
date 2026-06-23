@@ -204,8 +204,8 @@ def processar_pagina(page):
         if p.get("type") == "rich_text":
             return "".join(t.get("plain_text","") for t in p.get("rich_text",[])).strip()
         return ""
-    link_pasta  = get_url(get_prop(props, "LINK DA PASTA", "PASTA DO EMPREENDIMENTO", "LINK PASTA", "Link da Pasta"))
-    link_base   = get_url(get_prop(props, "LINK PASTA BASE", "PASTA DE ARQUIVOS BASE", "LINK BASE", "Link Base", "Arquivos Base"))
+    link_pasta  = get_url(get_prop(props, "PASTA EMPREENDIMENTO", "LINK DA PASTA", "PASTA DO EMPREENDIMENTO", "LINK PASTA", "Link da Pasta", "PASTA EMPREEND"))
+    link_base   = get_url(get_prop(props, "PASTA DOCUMENTOS BASE", "PASTA DOCUME", "LINK PASTA BASE", "PASTA DE ARQUIVOS BASE", "LINK BASE", "Link Base", "Arquivos Base"))
 
     valor_terreno_v = get_numero(get_prop(props, "VALOR DO TERRENO", "Valor do Terreno", "VALOR TERRENO"))
     valor_terreno   = valor_terreno_v if valor_terreno_v is not None else ""
@@ -1135,32 +1135,23 @@ def processar_checklist_pagina(page):
 
 def calcular_stats(itens):
     """
-    Conta status por célula com lógica hierárquica:
-    - Iniciados   = SIM + SOLICITADO + APROVADO + EM ANDAMENTO + EM APROVAÇÃO
-    - Solicitados = SOLICITADO + EM APROVAÇÃO + APROVADO (já foram solicitados)
-    - Aprovados   = só APROVADO
-    INEXISTE é excluído do denominador.
+    Conta SIM / NÃO / SOLICITADO / APROVADO / INEXISTE
+    por célula (cada campo de cada item = 1 célula).
+    INEXISTE é excluído dos denominadores de %, conforme solicitado.
     """
     total = sim = nao = solicitado = aprovado = inexiste = 0
-    em_andamento = em_aprovacao = 0
     for item in itens:
         for v in item["campos"].values():
-            if not v: continue
             total += 1
             vu = v.upper().strip()
-            if vu == "SIM":                            sim          += 1
-            elif vu in ("NÃO", "NAO"):                 nao          += 1
-            elif vu == "SOLICITADO":                   solicitado   += 1
-            elif vu == "APROVADO":                     aprovado     += 1
-            elif vu == "INEXISTE":                     inexiste     += 1
-            elif vu == "EM ANDAMENTO":                 em_andamento += 1
-            elif vu in ("EM APROVAÇÃO", "EM APROVACAO"): em_aprovacao += 1
+            if vu in ("SIM",):                  sim        += 1
+            elif vu in ("NÃO", "NAO"):          nao        += 1
+            elif vu == "SOLICITADO":             solicitado += 1
+            elif vu == "APROVADO":               aprovado   += 1
+            elif vu == "INEXISTE":               inexiste   += 1
 
-    considerados = total - inexiste
+    considerados = total - inexiste  # denominador real
     def pct(n): return round(n / considerados * 100, 1) if considerados else 0
-
-    iniciados  = sim + solicitado + aprovado + em_andamento + em_aprovacao
-    ja_solicit = solicitado + em_aprovacao + aprovado
 
     return {
         "total_celulas":   total,
@@ -1170,12 +1161,8 @@ def calcular_stats(itens):
         "nao":             nao,
         "solicitado":      solicitado,
         "aprovado":        aprovado,
-        "em_andamento":    em_andamento,
-        "em_aprovacao":    em_aprovacao,
-        "iniciados":       iniciados,
-        "ja_solicit":      ja_solicit,
-        "pct_iniciados":   pct(iniciados),
-        "pct_solicitados": pct(ja_solicit),
+        "pct_iniciados":   pct(sim),
+        "pct_solicitados": pct(solicitado),
         "pct_aprovados":   pct(aprovado),
     }
 

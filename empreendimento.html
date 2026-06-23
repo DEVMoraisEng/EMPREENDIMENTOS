@@ -388,8 +388,6 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
             <div class="info-row"><span class="info-key">Cidade</span><span class="info-val" id="i-cidade">—</span></div>
             <div class="info-row"><span class="info-key">CEP</span><span class="info-val mono" id="i-cep">—</span></div>
             <div class="info-row"><span class="info-key">N° de Unidades</span><span class="info-val" id="i-unidades">—</span></div>
-            <div class="info-row"><span class="info-key">Área do Lote</span><span class="info-val mono" id="i-area-lote">—</span></div>
-            <div class="info-row"><span class="info-key">Área Equiv. Total</span><span class="info-val mono" id="i-area-equiv">—</span></div>
             <div class="info-row"><span class="info-key">Prazo Previsto</span><span class="info-val" id="i-prazo">—</span></div>
           </div>
         </div>
@@ -494,8 +492,6 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <span class="leg-item"><span class="cl-badge cl-solicitado">SOLICITADO</span> Elaboração solicitada</span>
         <span class="leg-item"><span class="cl-badge cl-inexiste">INEXISTE</span> Não necessário</span>
         <span class="leg-item"><span class="cl-badge cl-aprovado">APROVADO</span> Aprovado pela Caixa</span>
-        <span class="leg-item"><span class="cl-badge cl-andamento">EM ANDAMENTO</span> Iniciado</span>
-        <span class="leg-item"><span class="cl-badge cl-em-aprov">EM APROVAÇÃO</span> Enviado para aprovação</span>
       </div>
 
       <!-- Pré-Análise -->
@@ -797,38 +793,29 @@ function converterPaginasNotion(pages) {
   }
 
   // Calcula stats
-  // Lógica hierárquica: APROVADO ⊃ SOLICITADO ⊃ SIM/EM ANDAMENTO ⊃ NÃO
   let total = 0, sim = 0, nao = 0, solicitado = 0, aprovado = 0, inexiste = 0;
-  let em_andamento = 0, em_aprovacao = 0;
   for (const item of itens) {
     for (const v of Object.values(item.campos)) {
       if (!v) continue;
       total++;
       const vu = v.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-      if (vu === 'SIM')                     sim++;
+      if (vu === 'SIM')                sim++;
       else if (vu === 'NAO' || vu === 'NÃO') nao++;
-      else if (vu === 'SOLICITADO')          solicitado++;
-      else if (vu === 'APROVADO')            aprovado++;
-      else if (vu === 'INEXISTE')            inexiste++;
-      else if (vu === 'EM ANDAMENTO')        em_andamento++;
-      else if (vu === 'EM APROVACAO' || vu === 'EM APROVAÇÃO') em_aprovacao++;
+      else if (vu === 'SOLICITADO')    solicitado++;
+      else if (vu === 'APROVADO')      aprovado++;
+      else if (vu === 'INEXISTE')      inexiste++;
     }
   }
   const considerados = total - inexiste;
   const pct = (n) => considerados > 0 ? Math.round(n / considerados * 100) : 0;
-  // Hierarquia: iniciados = tudo exceto NÃO e INEXISTE
-  const iniciados   = sim + solicitado + aprovado + em_andamento + em_aprovacao;
-  // Solicitados = solicitado + em_aprovacao + aprovado (já foram solicitados)
-  const ja_solicit  = solicitado + em_aprovacao + aprovado;
 
   return {
     itens,
     stats: {
       total_celulas: total, inexiste, considerados,
-      sim, nao, solicitado, aprovado, em_andamento, em_aprovacao,
-      iniciados, ja_solicit,
-      pct_iniciados:   pct(iniciados),
-      pct_solicitados: pct(ja_solicit),
+      sim, nao, solicitado, aprovado,
+      pct_iniciados:   pct(sim),
+      pct_solicitados: pct(solicitado),
       pct_aprovados:   pct(aprovado),
     }
   };
@@ -863,7 +850,7 @@ async function buscarChecklist(tab, nomeEmp) {
       dadosTab = await buscarDoNotion(tab, nomeEmp);
     }
 
-    renderChecklistFromJson(tab, dadosTab, tab);
+    renderChecklistFromJson(tab, dadosTab);
     checlistsCarregados[tab] = true;
 
   } catch(e) {
@@ -959,7 +946,7 @@ function getResponsavel(nomeDoc) {
 }
 
 // ── RENDER A PARTIR DO JSON PRÉ-PROCESSADO ────────────────────────────────────
-function renderChecklistFromJson(tab, dados, tabId) {
+function renderChecklistFromJson(tab, dados) {
   const loadEl    = document.getElementById(`load-${tab}`);
   const contentEl = document.getElementById(`content-${tab}`);
 
@@ -1010,9 +997,6 @@ function renderChecklistFromJson(tab, dados, tabId) {
   const pctSol  = stats.pct_solicitados ?? 0;
   const pctApv  = stats.pct_aprovados   ?? 0;
   const consid  = stats.considerados    ?? 0;
-  const nIni    = stats.iniciados       ?? stats.sim ?? 0;
-  const nSol    = stats.ja_solicit      ?? stats.solicitado ?? 0;
-  const nApv    = stats.aprovado        ?? 0;
 
   // ── Tabela: DOCUMENTOS em LINHAS, com Status + Responsável ─────────────────
   const linhas = documentos.map(doc => `
@@ -1021,15 +1005,6 @@ function renderChecklistFromJson(tab, dados, tabId) {
       <td>${badgeCl(doc.status)}</td>
       <td class="cl-resp">${getResponsavel(doc.nome)}</td>
     </tr>`).join('');
-
-  // Legenda específica para a aba de projetos
-  const notaProjetos = (tabId === 'projetos') ? `
-    <div class="aprov-legenda" style="margin-bottom:14px;font-size:12.5px">
-      <span class="leg-item"><span class="cl-badge cl-nao">NÃO</span> Não iniciado</span>
-      <span class="leg-item"><span class="cl-badge cl-andamento">EM ANDAMENTO</span> Iniciado</span>
-      <span class="leg-item"><span class="cl-badge cl-em-aprov">EM APROVAÇÃO</span> Enviado para aprovação</span>
-      <span class="leg-item"><span class="cl-badge cl-aprovado">APROVADO</span> Aprovado</span>
-    </div>` : '';
 
   const tabelaHtml = `
     <table class="cl-table">
@@ -1043,22 +1018,22 @@ function renderChecklistFromJson(tab, dados, tabId) {
       <tbody>${linhas}</tbody>
     </table>`;
 
-  contentEl.innerHTML = notaProjetos + `
+  contentEl.innerHTML = `
     <div class="aprov-resumo">
       <div class="graf-card">
         <div class="graf-title">Iniciados (SIM vs NÃO)</div>
         <div class="graf-ring-wrap">${ringHtml(pctIni, ringColor(pctIni))}</div>
-        <div class="graf-sub"><span>${nIni}</span> de ${consid} itens considerados</div>
+        <div class="graf-sub"><span>${stats.sim ?? 0}</span> de ${consid} itens considerados</div>
       </div>
       <div class="graf-card">
         <div class="graf-title">Solicitados</div>
         <div class="graf-ring-wrap">${ringHtml(pctSol, ringColor(pctSol))}</div>
-        <div class="graf-sub"><span>${nSol}</span> de ${consid} itens considerados</div>
+        <div class="graf-sub"><span>${stats.solicitado ?? 0}</span> de ${consid} itens considerados</div>
       </div>
       <div class="graf-card">
         <div class="graf-title">Aprovados (100%)</div>
         <div class="graf-ring-wrap">${ringHtml(pctApv, ringColor(pctApv))}</div>
-        <div class="graf-sub"><span>${nApv}</span> de ${consid} itens considerados</div>
+        <div class="graf-sub"><span>${stats.aprovado ?? 0}</span> de ${consid} itens considerados</div>
       </div>
     </div>
     ${tabelaHtml}`;
@@ -1144,8 +1119,6 @@ function preencherVisaoGeral(emp) {
   setInfo('i-cidade',     [emp.setor, emp.cidade].filter(Boolean).join(' · '));
   setInfo('i-cep',        emp.cep);
   setInfo('i-unidades',   emp.n_unidades ? `${emp.n_unidades} unidades` : null);
-  setInfo('i-area-lote',  emp.area_lote   ? `${emp.area_lote} m²` : null);
-  setInfo('i-area-equiv', emp.area_equivalente ? `${emp.area_equivalente} m²` : null);
   setInfo('i-prazo',      emp.prazo_previsto);
   setInfo('i-tel',        emp.tel_contato);
   setInfo('i-email',      emp.email);
