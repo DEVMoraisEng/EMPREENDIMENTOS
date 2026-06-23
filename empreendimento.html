@@ -162,6 +162,11 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 /* ABA APROVAÇÃO */
 #aba-aprovacao{display:none}
 .aprov-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.aprov-legenda{display:flex;flex-wrap:wrap;gap:8px 18px;padding:14px 18px;margin-bottom:20px;
+               background:var(--bg2);border:1.5px solid var(--border2);border-radius:10px}
+.leg-item{display:inline-flex;align-items:center;gap:7px;font-size:13px;
+          font-weight:600;color:var(--text)}
+.leg-item .cl-badge{font-size:11px;padding:3px 9px}
 .aprov-tab{padding:12px 20px;font-family:'Barlow Condensed',sans-serif;font-size:15px;
            font-weight:700;letter-spacing:.05em;text-transform:uppercase;
            cursor:pointer;color:var(--text3);border-bottom:3px solid transparent;
@@ -438,6 +443,15 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="aprov-tab"        data-tab="contratacao"   onclick="trocarTab('contratacao')">Contratação</div>
         <div class="aprov-tab"        data-tab="analise-jur"   onclick="trocarTab('analise-jur')">Análise Jurídica</div>
         <div class="aprov-tab"        data-tab="projetos"      onclick="trocarTab('projetos')">Projetos</div>
+      </div>
+
+      <!-- LEGENDA -->
+      <div class="aprov-legenda">
+        <span class="leg-item"><span class="cl-badge cl-sim">SIM</span> Anexado</span>
+        <span class="leg-item"><span class="cl-badge cl-nao">NÃO</span> Não anexado</span>
+        <span class="leg-item"><span class="cl-badge cl-solicitado">SOLICITADO</span> Elaboração solicitada</span>
+        <span class="leg-item"><span class="cl-badge cl-inexiste">INEXISTE</span> Não necessário</span>
+        <span class="leg-item"><span class="cl-badge cl-aprovado">APROVADO</span> Aprovado pela Caixa</span>
       </div>
 
       <!-- Pré-Análise -->
