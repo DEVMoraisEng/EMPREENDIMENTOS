@@ -94,6 +94,10 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
                 color:#1a6b40;display:inline-flex;align-items:center;gap:4px;width:fit-content}
 .doc-card.active .doc-card-badge{background:rgba(143,220,210,.2);color:var(--teal)}
 .badge-breve{background:rgba(90,128,153,.1)!important;color:var(--text3)!important}
+.doc-card-resp{font-size:10px;color:var(--text4);display:flex;align-items:center;gap:4px;
+               margin-top:2px;transition:color .18s}
+.doc-card-resp::before{content:'👤';font-size:9px}
+.doc-card.active .doc-card-resp{color:rgba(255,255,255,.55)}
 
 /* PAINEL DO DOCUMENTO */
 .doc-panel{display:none;animation:fadeSlide .2s ease}
@@ -233,6 +237,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="doc-card-nome">FRE</div>
         <div class="doc-card-desc">Ficha Resumo do Empreendimento</div>
         <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Depto. de Projetos</div>
       </div>
 
       <div class="doc-card" id="card-carta" onclick="abrirDoc('carta')">
@@ -240,6 +245,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="doc-card-nome">Carta Proposta</div>
         <div class="doc-card-desc">Proposta de Financiamento CEF</div>
         <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Depto. de Projetos</div>
       </div>
 
       <div class="doc-card" id="card-memorial-hab" onclick="abrirDoc('memorial-hab')">
@@ -247,6 +253,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="doc-card-nome">Memorial Hab.</div>
         <div class="doc-card-desc">Memorial Descritivo — Habitação</div>
         <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Depto. de Projetos</div>
       </div>
 
       <div class="doc-card" id="card-memorial-infra" onclick="abrirDoc('memorial-infra')">
@@ -254,6 +261,7 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="doc-card-nome">Memorial Infra</div>
         <div class="doc-card-desc">Memorial Descritivo — Infraestrutura</div>
         <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Depto. de Projetos</div>
       </div>
 
       <div class="doc-card" id="card-quadros" onclick="abrirDoc('quadros')">
@@ -261,6 +269,31 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         <div class="doc-card-nome">Quadros ABNT</div>
         <div class="doc-card-desc">NBR 12.721 — Áreas e Frações</div>
         <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Felipe</div>
+      </div>
+
+      <div class="doc-card" id="card-boas-praticas" onclick="abrirDoc('boas-praticas')">
+        <div class="doc-card-icon">📑</div>
+        <div class="doc-card-nome">Cód. de Práticas</div>
+        <div class="doc-card-desc">Código de Práticas CEF</div>
+        <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Júlio / Depto. Projetos</div>
+      </div>
+
+      <div class="doc-card" id="card-decl-abnt" onclick="abrirDoc('decl-abnt')">
+        <div class="doc-card-icon">📄</div>
+        <div class="doc-card-nome">Decl. ABNT</div>
+        <div class="doc-card-desc">Declaração Atendimento NBR 15.575</div>
+        <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Depto. de Projetos</div>
+      </div>
+
+      <div class="doc-card" id="card-parecer" onclick="abrirDoc('parecer')">
+        <div class="doc-card-icon">🏗️</div>
+        <div class="doc-card-nome">Parecer Estrutural</div>
+        <div class="doc-card-desc">Parecer Técnico Estrutural</div>
+        <div class="doc-card-badge">✓ Disponível</div>
+        <div class="doc-card-resp">Depto. de Projetos</div>
       </div>
     </div>
 
@@ -593,6 +626,175 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
       </div>
     </div>
 
+
+    <!-- ═══ PAINEL CÓDIGO DE BOAS PRÁTICAS ═══ -->
+    <div class="doc-panel" id="panel-boas-praticas">
+      <div class="form-card collapsed" id="card-boas-praticas-id">
+        <div class="form-card-hdr" onclick="toggleCard('boas-praticas-id')">
+          <div class="form-card-left">
+            <div class="form-card-title">Identificação do Empreendimento</div>
+            <div class="form-card-sub">Verde = preenchido pelo Notion · Amarelo = preenchimento manual</div>
+          </div>
+          <div class="form-card-toggle">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="form-body">
+          <div class="fg fg-2">
+            <div class="field"><label>Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-proponente" readonly></div>
+            <div class="field"><label>CNPJ/CPF Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-doc-proponente" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-construtora" readonly></div>
+            <div class="field"><label>CNPJ Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-doc-construtora" readonly></div>
+          </div>
+          <div class="fg fg-1">
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-nome" readonly></div>
+          </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Endereço <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-rua" readonly></div>
+            <div class="field"><label>Complemento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-complemento" readonly></div>
+            <div class="field"><label>Setor <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-setor" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Cidade <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-cidade" readonly></div>
+            <div class="field"><label>CEP <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fbp-cep" readonly></div>
+          </div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <div class="action-lbl">
+          <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar Código de Boas Práticas</strong>
+          Preenche a seção de identificação do Código de Práticas CEF automaticamente.
+        </div>
+        <a class="btn-sec" href="CODIGO_DE_BOAS_PRATICAS.docx" download>⬇ Modelo original</a>
+        <a class="btn-gerar verde" id="btn-gerar-boas-praticas" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar Cód. Práticas
+        </a>
+      </div>
+    </div>
+
+    <!-- ═══ PAINEL DECLARAÇÃO ABNT ═══ -->
+    <div class="doc-panel" id="panel-decl-abnt">
+      <div class="form-card collapsed" id="card-decl-abnt-id">
+        <div class="form-card-hdr" onclick="toggleCard('decl-abnt-id')">
+          <div class="form-card-left">
+            <div class="form-card-title">Identificação do Empreendimento</div>
+            <div class="form-card-sub">Verde = preenchido pelo Notion · Amarelo = preenchimento manual</div>
+          </div>
+          <div class="form-card-toggle">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="form-body">
+          <div class="fg fg-2">
+            <div class="field"><label>Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-proponente" readonly></div>
+            <div class="field"><label>CNPJ/CPF Proponente <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-doc-proponente" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-construtora" readonly></div>
+            <div class="field"><label>CNPJ Construtora <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-doc-construtora" readonly></div>
+          </div>
+          <div class="fg fg-1">
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-nome" readonly></div>
+          </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Endereço <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-rua" readonly></div>
+            <div class="field"><label>Complemento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-complemento" readonly></div>
+            <div class="field"><label>Setor <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-setor" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Cidade <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fda-cidade" readonly></div>
+            <div class="field"><label>Data de Emissão</label>
+              <input type="text" id="fda-data" readonly></div>
+          </div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <div class="action-lbl">
+          <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar Declaração de Atendimento ABNT</strong>
+          Preenche os dados de identificação da Declaração NBR 15.575 automaticamente.
+        </div>
+        <a class="btn-sec" href="DECLARACAO_DE_ATENDIMENTO_ABNT.docx" download>⬇ Modelo original</a>
+        <a class="btn-gerar verde" id="btn-gerar-decl-abnt" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar Declaração ABNT
+        </a>
+      </div>
+    </div>
+
+    <!-- ═══ PAINEL PARECER ESTRUTURAL ═══ -->
+    <div class="doc-panel" id="panel-parecer">
+      <div class="form-card collapsed" id="card-parecer-id">
+        <div class="form-card-hdr" onclick="toggleCard('parecer-id')">
+          <div class="form-card-left">
+            <div class="form-card-title">Identificação do Empreendimento</div>
+            <div class="form-card-sub">Verde = preenchido pelo Notion · Amarelo = preenchimento manual</div>
+          </div>
+          <div class="form-card-toggle">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="form-body">
+          <div class="fg fg-1">
+            <div class="field"><label>Nome do Empreendimento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fpe-nome" readonly></div>
+          </div>
+          <div class="fg fg-3">
+            <div class="field"><label>Endereço <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fpe-rua" readonly></div>
+            <div class="field"><label>Complemento <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fpe-complemento" readonly></div>
+            <div class="field"><label>Setor <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fpe-setor" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Cidade <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fpe-cidade" readonly></div>
+            <div class="field"><label>Data de Emissão</label>
+              <input type="text" id="fpe-data" readonly></div>
+          </div>
+          <div class="fg fg-2">
+            <div class="field"><label>Responsável Técnico <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fpe-resp-tec" readonly></div>
+            <div class="field"><label>CREA <span class="field-tag tag-notion">Notion</span></label>
+              <input type="text" id="fpe-crea" readonly></div>
+          </div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <div class="action-lbl">
+          <strong style="display:block;color:var(--text);margin-bottom:3px">Gerar Parecer Técnico Estrutural</strong>
+          Preenche os dados de identificação do Parecer Estrutural automaticamente.
+        </div>
+        <a class="btn-sec" href="PARECER_ESTRUTURAL.docx" download>⬇ Modelo original</a>
+        <a class="btn-gerar verde" id="btn-gerar-parecer" href="#" download
+           style="text-decoration:none;pointer-events:none;opacity:.4;text-align:center">
+          ⬇ Baixar Parecer Estrutural
+        </a>
+      </div>
+    </div>
+
   </div><!-- fim #docs-area -->
 </div>
 
@@ -750,6 +952,52 @@ function mostrarEmpreendimento(){
   btnQuadros.href    = nomeArquivo(emp,'QUADROS_ABNT','xlsx');
   btnQuadros.download= nomeArquivo(emp,'QUADROS_ABNT','xlsx');
   btnQuadros.style.pointerEvents='auto'; btnQuadros.style.opacity='1';
+
+  // ── Código de Boas Práticas ──────────────────────────────────────────────
+  document.getElementById('fbp-proponente').value      = emp.proponente;
+  document.getElementById('fbp-doc-proponente').value  = emp.doc_proponente;
+  document.getElementById('fbp-construtora').value     = emp.construtora;
+  document.getElementById('fbp-doc-construtora').value = emp.doc_construtora;
+  document.getElementById('fbp-nome').value            = emp.nome;
+  document.getElementById('fbp-rua').value             = emp.rua;
+  document.getElementById('fbp-complemento').value     = emp.complemento;
+  document.getElementById('fbp-setor').value           = emp.setor;
+  document.getElementById('fbp-cidade').value          = emp.cidade;
+  document.getElementById('fbp-cep').value             = emp.cep;
+  const btnBP = document.getElementById('btn-gerar-boas-praticas');
+  btnBP.href    = nomeArquivo(emp,'CODIGO_BOAS_PRATICAS','docx');
+  btnBP.download= nomeArquivo(emp,'CODIGO_BOAS_PRATICAS','docx');
+  btnBP.style.pointerEvents='auto'; btnBP.style.opacity='1';
+
+  // ── Declaração ABNT NBR 15.575 ───────────────────────────────────────────
+  document.getElementById('fda-proponente').value      = emp.proponente;
+  document.getElementById('fda-doc-proponente').value  = emp.doc_proponente;
+  document.getElementById('fda-construtora').value     = emp.construtora;
+  document.getElementById('fda-doc-construtora').value = emp.doc_construtora;
+  document.getElementById('fda-nome').value            = emp.nome;
+  document.getElementById('fda-rua').value             = emp.rua;
+  document.getElementById('fda-complemento').value     = emp.complemento;
+  document.getElementById('fda-setor').value           = emp.setor;
+  document.getElementById('fda-cidade').value          = emp.cidade;
+  document.getElementById('fda-data').value            = dataHoje();
+  const btnDA = document.getElementById('btn-gerar-decl-abnt');
+  btnDA.href    = nomeArquivo(emp,'DECLARACAO_ABNT','docx');
+  btnDA.download= nomeArquivo(emp,'DECLARACAO_ABNT','docx');
+  btnDA.style.pointerEvents='auto'; btnDA.style.opacity='1';
+
+  // ── Parecer Técnico Estrutural ───────────────────────────────────────────
+  document.getElementById('fpe-nome').value        = emp.nome;
+  document.getElementById('fpe-rua').value         = emp.rua;
+  document.getElementById('fpe-complemento').value = emp.complemento;
+  document.getElementById('fpe-setor').value       = emp.setor;
+  document.getElementById('fpe-cidade').value      = emp.cidade;
+  document.getElementById('fpe-data').value        = dataHoje();
+  document.getElementById('fpe-resp-tec').value    = emp.responsavel_tecnico;
+  document.getElementById('fpe-crea').value        = emp.crea;
+  const btnPE = document.getElementById('btn-gerar-parecer');
+  btnPE.href    = nomeArquivo(emp,'PARECER_ESTRUTURAL','docx');
+  btnPE.download= nomeArquivo(emp,'PARECER_ESTRUTURAL','docx');
+  btnPE.style.pointerEvents='auto'; btnPE.style.opacity='1';
 }
 
 // ── CAMPO COM STATUS DE PREENCHIMENTO ────────────────────────────────────────
@@ -767,7 +1015,7 @@ function toggleCard(cardId){
 }
 
 // ── TROCAR DOCUMENTO ─────────────────────────────────────────────────────────
-const DOCS = ['fre','carta','memorial-hab','memorial-infra','quadros'];
+const DOCS = ['fre','carta','memorial-hab','memorial-infra','quadros','boas-praticas','decl-abnt','parecer'];
 function abrirDoc(doc){
   DOCS.forEach(d=>{
     const c = document.getElementById('card-'+d);
