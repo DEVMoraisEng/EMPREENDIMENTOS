@@ -34,12 +34,9 @@ NOTION_DB    = os.environ.get("NOTION_DB_EMP", "")
 NOTION_TOKEN_UH = os.environ.get("NOTION_TOKEN_UH", "")
 NOTION_DB_UH    = os.environ.get("NOTION_DB_UH", "")
 
-# BD de Checklists de Aprovacao
-# Usa NOTION_TOKEN_CL se configurado, senao tenta NOTION_TOKEN_EMP (mesmo workspace)
-_token_cl_raw = os.environ.get("NOTION_TOKEN_CL", "").strip()
-_token_emp    = os.environ.get("NOTION_TOKEN_EMP", "").strip()
-NOTION_TOKEN_CL = _token_cl_raw if _token_cl_raw else _token_emp
-print(f"  TOKEN_CL: {'proprio' if _token_cl_raw else 'fallback para TOKEN_EMP'} (len={len(NOTION_TOKEN_CL)})")
+# BD de Checklists de Aprovacao — token e DBs proprios
+# Os IDs abaixo sao fallback caso o secret nao esteja configurado
+NOTION_TOKEN_CL = os.environ.get("NOTION_TOKEN_CL", "")
 NOTION_DB_PRE_ANALISE = os.environ.get(
     "NOTION_DB_PRE_ANALISE", "387c5ab532d380fcb6d0d2cb563926b6"
 )
@@ -67,7 +64,7 @@ def _headers(token):
 
 HEADERS        = _headers(NOTION_TOKEN)
 HEADERS_UH     = _headers(NOTION_TOKEN_UH)
-# Checklists — token proprio ou fallback para EMP
+# Checklists usam token proprio (NOTION_TOKEN_CL)
 HEADERS_CL     = _headers(NOTION_TOKEN_CL)
 
 # ── Helpers de propriedades Notion ───────────────────────────────────────────
@@ -175,7 +172,7 @@ def processar_pagina(page):
     rua         = get_texto(get_prop(props, "RUA", "Rua", "rua", "ENDEREÇO", "Endereço"))
     complemento = get_texto(get_prop(props, "COMPLEMENTO", "Complemento"))
     cep         = get_texto(get_prop(props, "CEP", "Cep", "cep"))
-    crea        = get_texto(get_prop(props, "CREA", "CAU/CREA", "CAU"))
+    crea        = get_texto_ou_select(get_prop(props, "CREA", "CAU/CREA", "CAU"))
     incorporador  = get_texto_ou_select(get_prop(props, "INCORPORADOR", "Incorporador"))
     doc_incorp    = get_texto_ou_select(get_prop(props, "DOC. INCORPORADOR", "DOC INCORPORADOR"))
     tel           = get_texto(get_prop(props, "TEL. CONTATO", "TEL CONTATO", "TELEFONE", "Telefone"))
@@ -508,6 +505,140 @@ def gerar_memorial(emp, tipo):
     out = nome_arquivo(emp, prefixo, "docx")
     doc.save(out)
     print(f"  Memorial {tipo}: {out}")
+    return out
+
+
+
+# ── Gerar Declaração de Atendimento ABNT NBR 15.575 (.docx) ──────────────────
+
+def gerar_declaracao_abnt(emp):
+    try:
+        from docx import Document
+    except ImportError:
+        print("  AVISO: python-docx não instalado"); return None
+
+    src = next((f for f in [
+        "DECLARAÇÃO DE ATENDIMENTO ABNT.docx",
+        "DECLARACAO DE ATENDIMENTO ABNT.docx",
+        "DECLARAÇÃO_DE_ATENDIMENTO_ABNT.docx",
+        "DECLARACAO_DE_ATENDIMENTO_ABNT.docx",
+        "DECLARAÇÃO DE ATENDIMENTO ABNT.doc",
+        "DECLARACAO DE ATENDIMENTO ABNT.doc",
+    ] if os.path.exists(f)), None)
+
+    if not src:
+        print("  AVISO: template Declaração de Atendimento ABNT não encontrado"); return None
+
+    mapa = {
+        "{PROPONENTE}":             emp.get("proponente", ""),
+        "{DOC. PROPONENTE}":        emp.get("doc_proponente", ""),
+        "{CONSTRUTORA}":            emp.get("construtora", ""),
+        "{DOC. CONSTRUTORA}":       emp.get("doc_construtora", ""),
+        "{NOME DO EMPREENDIMENTO}": emp.get("nome", ""),
+        "{RUA}":                    emp.get("rua", ""),
+        "{COMPLEMENTO}":            emp.get("complemento", ""),
+        "{SETOR}":                  emp.get("setor", ""),
+        "{CIDADE}":                 emp.get("cidade", ""),
+        "{CEP}":                    emp.get("cep", ""),
+        "{DATA HOJE}":              data_hoje_fmt(),
+    }
+
+    doc = Document(src)
+    substituir_docx(doc, mapa)
+    remover_protecao_docx(doc)
+
+    out = nome_arquivo(emp, "DECLARACAO_ABNT", "docx")
+    doc.save(out)
+    print(f"  Declaração ABNT: {out}")
+    return out
+
+
+# ── Gerar Parecer Técnico Estrutural (.docx) ──────────────────────────────────
+
+def gerar_parecer_estrutural(emp):
+    try:
+        from docx import Document
+    except ImportError:
+        print("  AVISO: python-docx não instalado"); return None
+
+    src = next((f for f in [
+        "PARECER ESTRUTURAL.docx",
+        "PARECER_ESTRUTURAL.docx",
+        "PARECER TECNICO ESTRUTURAL.docx",
+        "PARECER_TECNICO_ESTRUTURAL.docx",
+    ] if os.path.exists(f)), None)
+
+    if not src:
+        print("  AVISO: template Parecer Estrutural não encontrado"); return None
+
+    mapa = {
+        "{NOME DO EMPREENDIMENTO}": emp.get("nome", ""),
+        "{RUA}":                    emp.get("rua", ""),
+        "{COMPLEMENTO}":            emp.get("complemento", ""),
+        "{SETOR}":                  emp.get("setor", ""),
+        "{CIDADE}":                 emp.get("cidade", ""),
+        # Responsável técnico — com e sem typo ({REPONSÁVEL} vs {RESPONSÁVEL})
+        "{RESPONSÁVEL TÉCNICO}":    emp.get("responsavel_tecnico", ""),
+        "{REPONSÁVEL TÉCNICO}":     emp.get("responsavel_tecnico", ""),
+        "{CREA}":                   emp.get("crea", ""),
+        "{DATA DE HOJE}":           data_hoje_fmt(),
+    }
+
+    doc = Document(src)
+    substituir_docx(doc, mapa)
+    remover_protecao_docx(doc)
+
+    out = nome_arquivo(emp, "PARECER_ESTRUTURAL", "docx")
+    doc.save(out)
+    print(f"  Parecer Estrutural: {out}")
+    return out
+
+# ── Gerar Código de Boas Práticas (.docx) ─────────────────────────────────────
+
+def gerar_codigo_boas_praticas(emp):
+    try:
+        from docx import Document
+    except ImportError:
+        print("  AVISO: python-docx não instalado"); return None
+
+    src = next((f for f in [
+        "CÓDIGO DE BOAS PRÁTICAS.docx",
+        "CODIGO DE BOAS PRATICAS.docx",
+        "CÓDIGO_DE_BOAS_PRÁTICAS.docx",
+        "CODIGO_DE_BOAS_PRATICAS.docx",
+    ] if os.path.exists(f)), None)
+
+    if not src:
+        print("  AVISO: template Código de Boas Práticas não encontrado"); return None
+
+    dia, mes, ano = data_extenso()
+
+    mapa = {
+        # Identificação
+        "{PROPONENTE}":             emp.get("proponente", ""),
+        "{DOC. PROPONENTE}":        emp.get("doc_proponente", ""),
+        "{CONSTRUTORA}":            emp.get("construtora", ""),
+        "{DOC. CONSTRUTORA}":       emp.get("doc_construtora", ""),
+        "{NOME DO EMPREENDIMENTO}": emp.get("nome", ""),
+        "{RUA}":                    emp.get("rua", ""),
+        "{COMPLEMENTO}":            emp.get("complemento", ""),
+        "{SETOR}":                  emp.get("setor", ""),
+        "{CIDADE}":                 emp.get("cidade", ""),
+        "{CEP}":                    emp.get("cep", ""),
+        # Data na assinatura — os campos foram cortados pelo Word no template
+        # Aparecem no XML como: {D  {MÊS}  {ANO  (sem fechar chaves)
+        "{MÊS}": mes,
+        "{D":    dia,
+        "{ANO":  ano,
+    }
+
+    doc = Document(src)
+    substituir_docx(doc, mapa)
+    remover_protecao_docx(doc)
+
+    out = nome_arquivo(emp, "CODIGO_BOAS_PRATICAS", "docx")
+    doc.save(out)
+    print(f"  Código de Boas Práticas: {out}")
     return out
 
 # ── Gerar Quadros ABNT (.xlsx) ────────────────────────────────────────────────
@@ -1129,6 +1260,9 @@ def main():
             gerar_memorial(emp, "HABITACAO")
             gerar_memorial(emp, "INFRAESTRUTURA")
             gerar_quadros_abnt(emp, unidades)
+            gerar_codigo_boas_praticas(emp)
+            gerar_declaracao_abnt(emp)
+            gerar_parecer_estrutural(emp)
 
         except Exception as ex:
             import traceback
