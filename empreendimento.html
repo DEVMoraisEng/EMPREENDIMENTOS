@@ -217,6 +217,8 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 .cl-inexiste  {background:#9aa7b0}
 .cl-aprovado  {background:#4a8bbf}
 .cl-nd        {background:#c4d2da;color:#5a7280}
+.cl-andamento  {background:#e07b39;color:#fff}
+.cl-em-aprov   {background:#4a8bbf;color:#fff}
 
 .empty-tab{text-align:center;padding:40px;color:var(--text4);font-size:14px;
            background:var(--branco);border-radius:10px;border:1.5px dashed var(--border)}
@@ -407,8 +409,36 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
         </div>
       </div>
 
+      <!-- LINKS ONEDRIVE -->
+      <div class="sec-title" style="margin-top:28px">Pastas OneDrive</div>
+      <div class="manuais-grid" id="links-onedrive" style="margin-bottom:28px">
+        <a id="link-pasta-emp" href="#" target="_blank" class="manual-btn" style="display:none">
+          <div class="manual-ico" style="background:rgba(0,120,212,.1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0078D4" stroke-width="1.8"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          </div>
+          <div class="manual-txt">
+            <div class="manual-nome">Pasta do Empreendimento</div>
+            <div class="manual-desc">Arquivos e documentos no OneDrive</div>
+          </div>
+          <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a id="link-pasta-base" href="#" target="_blank" class="manual-btn" style="display:none">
+          <div class="manual-ico" style="background:rgba(0,120,212,.1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0078D4" stroke-width="1.8"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/></svg>
+          </div>
+          <div class="manual-txt">
+            <div class="manual-nome">Pasta de Arquivos Base</div>
+            <div class="manual-desc">Templates e arquivos de referência</div>
+          </div>
+          <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <div id="no-links-msg" style="color:var(--text4);font-size:13px;padding:12px 0;display:none">
+          Nenhum link de pasta configurado neste empreendimento.
+        </div>
+      </div>
+
       <!-- MANUAIS -->
-      <div class="sec-title" style="margin-top:28px">Manuais</div>
+      <div class="sec-title" style="margin-top:0">Manuais</div>
       <div class="manuais-grid">
         <a href="MANUAL_DOCUMENTACOES_PARA_APROVACAO.pdf" target="_blank" class="manual-btn">
           <div class="manual-ico">
@@ -420,13 +450,23 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
           </div>
           <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
         </a>
-        <a href="MANUAL_DE_PROJETOS.pdf" target="_blank" class="manual-btn manual-btn-soon" onclick="return avisarEmBreve(event)">
+        <a href="MANUAL_DE_PROJETOS.pdf" target="_blank" class="manual-btn">
           <div class="manual-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
           </div>
           <div class="manual-txt">
-            <div class="manual-nome">Manual de Projetos <span class="manual-tag">em breve</span></div>
+            <div class="manual-nome">Manual de Projetos</div>
             <div class="manual-desc">Requisitos e padrões dos projetos do empreendimento</div>
+          </div>
+          <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="MANUAL_ARMAZENAGEM_E_ENVIO_DE_ARQUIVOS.pdf" target="_blank" class="manual-btn">
+          <div class="manual-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="manual-txt">
+            <div class="manual-nome">Armazenagem e Envio</div>
+            <div class="manual-desc">Padrão de armazenagem e envio de arquivos</div>
           </div>
           <svg class="manual-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
         </a>
@@ -448,10 +488,12 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
       <!-- LEGENDA -->
       <div class="aprov-legenda">
         <span class="leg-item"><span class="cl-badge cl-sim">SIM</span> Anexado</span>
-        <span class="leg-item"><span class="cl-badge cl-nao">NÃO</span> Não anexado</span>
+        <span class="leg-item"><span class="cl-badge cl-nao">NÃO</span> Não anexado / Não iniciado</span>
         <span class="leg-item"><span class="cl-badge cl-solicitado">SOLICITADO</span> Elaboração solicitada</span>
         <span class="leg-item"><span class="cl-badge cl-inexiste">INEXISTE</span> Não necessário</span>
         <span class="leg-item"><span class="cl-badge cl-aprovado">APROVADO</span> Aprovado pela Caixa</span>
+        <span class="leg-item"><span class="cl-badge cl-andamento">EM ANDAMENTO</span> Iniciado</span>
+        <span class="leg-item"><span class="cl-badge cl-em-aprov">EM APROVAÇÃO</span> Enviado para aprovação</span>
       </div>
 
       <!-- Pré-Análise -->
@@ -492,11 +534,11 @@ body{background:var(--bg);font-family:'Barlow',sans-serif;min-height:100vh;overf
 
       <!-- Projetos -->
       <div class="aprov-panel" id="panel-projetos">
-        <div class="aba-em-breve">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <h3>Em breve</h3>
-          <p>O banco de dados de Projetos será configurado em breve.</p>
+        <div class="cl-loading" id="load-projetos">
+          <div class="cl-spin"></div>
+          <div>Buscando checklist...</div>
         </div>
+        <div id="content-projetos" style="display:none"></div>
       </div>
     </div>
 
@@ -539,6 +581,7 @@ const TAB_KEY_MAP = {
   'pre-analise': 'pre_analise',
   'analise-def': 'analise_def',
   'contratacao':  'contratacao',
+  'projetos':     'projetos',
 };
 
 // IDs dos BDs do Notion (usados como fallback quando data_checklists.json não existe)
@@ -546,6 +589,7 @@ const CHECKLIST_DBS = {
   'pre-analise': '387c5ab532d380fcb6d0d2cb563926b6',
   'analise-def': '387c5ab532d38040b1a4d3d3c4890235',
   'contratacao':  '387c5ab532d380378ed7ea77833705c3',
+  'projetos':     '388c5ab532d380349718d1defeebdf80',
 };
 const NOTION_TOKEN   = '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';
 const NOTION_VERSION = '2022-06-28';
@@ -589,13 +633,6 @@ function setText(id, text, cls='') {
   if (!el) return;
   el.textContent = text || '—';
   if (cls) el.className = el.className.replace(/prazo-num\s*/,'') + ' prazo-num ' + cls;
-}
-
-// ── MANUAIS ──────────────────────────────────────────────────────────────────
-function avisarEmBreve(e) {
-  e.preventDefault();
-  alert('O Manual de Projetos será disponibilizado em breve.');
-  return false;
 }
 
 // ── NAVEGAÇÃO ───────────────────────────────────────────────────────────────
@@ -837,6 +874,8 @@ function badgeCl(val) {
   if (v === 'SOLICITADO')             return `<span class="cl-badge cl-solicitado">SOLICITADO</span>`;
   if (v === 'INEXISTE')               return `<span class="cl-badge cl-inexiste">INEXISTE</span>`;
   if (v === 'APROVADO')               return `<span class="cl-badge cl-aprovado">APROVADO</span>`;
+  if (v === 'EM ANDAMENTO')            return `<span class="cl-badge cl-andamento">EM ANDAMENTO</span>`;
+  if (v === 'EM APROVACAO' || v === 'EM APROVAÇÃO') return `<span class="cl-badge cl-em-aprov">EM APROVAÇÃO</span>`;
   return `<span class="cl-badge cl-nd">${val}</span>`;
 }
 
@@ -1085,6 +1124,16 @@ function preencherVisaoGeral(emp) {
   setInfo('i-prazo',      emp.prazo_previsto);
   setInfo('i-tel',        emp.tel_contato);
   setInfo('i-email',      emp.email);
+
+  // Links OneDrive
+  const linkPasta = emp.link_pasta || '';
+  const linkBase  = emp.link_base  || '';
+  const elLinkP   = document.getElementById('link-pasta-emp');
+  const elLinkB   = document.getElementById('link-pasta-base');
+  const elNoLinks = document.getElementById('no-links-msg');
+  if (linkPasta && elLinkP)  { elLinkP.href = linkPasta;  elLinkP.style.display = 'flex'; }
+  if (linkBase  && elLinkB)  { elLinkB.href = linkBase;   elLinkB.style.display = 'flex'; }
+  if (!linkPasta && !linkBase && elNoLinks) elNoLinks.style.display = 'block';
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────

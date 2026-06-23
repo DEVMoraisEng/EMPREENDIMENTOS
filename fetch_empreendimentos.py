@@ -21,6 +21,7 @@ Segredos necessarios (GitHub Actions Secrets):
   NOTION_DB_PRE_ANALISE  — ID do BD CHECKLIST PRE-ANALISE        (fallback: 387c5ab532d380fcb6d0d2cb563926b6)
   NOTION_DB_ANALISE_DEF  — ID do BD CHECKLIST ANALISE DEFINITIVA (fallback: 387c5ab532d38040b1a4d3d3c4890235)
   NOTION_DB_CONTRATACAO  — ID do BD CHECKLIST CONTRATACAO        (fallback: 387c5ab532d380378ed7ea77833705c3)
+  NOTION_DB_PROJETOS     — ID do BD CHECKLIST PROJETOS           (fallback: 388c5ab532d380349718d1defeebdf80)
 """
 
 import os, json, requests, shutil, re, copy
@@ -47,10 +48,15 @@ NOTION_DB_CONTRATACAO = os.environ.get(
     "NOTION_DB_CONTRATACAO", "387c5ab532d380378ed7ea77833705c3"
 )
 
+NOTION_DB_PROJETOS = os.environ.get(
+    "NOTION_DB_PROJETOS", "388c5ab532d380349718d1defeebdf80"
+)
+
 CHECKLISTS_CONFIG = {
     "pre_analise":  {"db_id": NOTION_DB_PRE_ANALISE,  "label": "PRE-ANALISE"},
     "analise_def":  {"db_id": NOTION_DB_ANALISE_DEF,  "label": "ANALISE DEFINITIVA"},
     "contratacao":  {"db_id": NOTION_DB_CONTRATACAO,   "label": "CONTRATACAO"},
+    "projetos":     {"db_id": NOTION_DB_PROJETOS,      "label": "PROJETOS"},
 }
 
 # (bloco de debug removido na v4)
@@ -191,6 +197,16 @@ def processar_pagina(page):
     area_equiv_v = get_numero(get_prop(props, "ÁREA EQUIVALENTE TOTAL", "ÁREA EQUIVALENTE", "AREA EQUIVALENTE TOTAL", "AREA EQUIVALENTE", "Área Equivalente"))
     area_equiv   = area_equiv_v if area_equiv_v is not None else ""
 
+    # Links OneDrive
+    def get_url(p):
+        if not p: return ""
+        if p.get("type") == "url": return p.get("url") or ""
+        if p.get("type") == "rich_text":
+            return "".join(t.get("plain_text","") for t in p.get("rich_text",[])).strip()
+        return ""
+    link_pasta  = get_url(get_prop(props, "LINK DA PASTA", "PASTA DO EMPREENDIMENTO", "LINK PASTA", "Link da Pasta"))
+    link_base   = get_url(get_prop(props, "LINK PASTA BASE", "PASTA DE ARQUIVOS BASE", "LINK BASE", "Link Base", "Arquivos Base"))
+
     valor_terreno_v = get_numero(get_prop(props, "VALOR DO TERRENO", "Valor do Terreno", "VALOR TERRENO"))
     valor_terreno   = valor_terreno_v if valor_terreno_v is not None else ""
 
@@ -233,6 +249,7 @@ def processar_pagina(page):
         "n_unidades": n_un, "prazo_previsto": prazo,
         "area_lote": area_lote, "area_equivalente": area_equiv,
         "valor_terreno": valor_terreno, "revisao": revisao,
+        "link_pasta": link_pasta, "link_base": link_base,
     }
 
 # ── Processar página UNIDADES DO EMPREENDIMENTO ───────────────────────────────
