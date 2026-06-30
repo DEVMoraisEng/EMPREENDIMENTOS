@@ -24,8 +24,9 @@ Segredos necessarios (GitHub Actions Secrets):
   NOTION_DB_PROJETOS     — ID do BD CHECKLIST PROJETOS           (fallback: 388c5ab532d380349718d1defeebdf80)
 """
 
-import os, json, requests, shutil, re, copy
+import os, json, requests, shutil, re, copy, zipfile
 from datetime import datetime, date
+from xml.sax.saxutils import escape as _xml_escape
 
 # ── Credenciais ───────────────────────────────────────────────────────────────
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN_EMP", "")
@@ -348,11 +349,117 @@ def substituir_docx(doc, mapa):
                 for para in cell.paragraphs:
                     sub_para(para)
 
+# ── Patch cirúrgico de XML (preserva cabeçalhos/imagens/VML das demais abas) ───
+#
+# MOTIVO: a FRE_v0xx.xlsx tem, em CADA aba (FRE, Orç_sintético_Hab,
+# Orç_analítico_Hab, Orç_eventos_Infra, Orç_analítico_Equipamen_Faixa_I,
+# Cronograma), uma logo + controles de formulário legados (VML/"(escolha)")
+# ancorados no cabeçalho. O openpyxl NÃO preserva esses elementos VML/EMF ao
+# fazer load_workbook()+save() — ele recompacta o pacote inteiro e troca essas
+# imagens/controles por versões simplificadas (ou as descarta), corrompendo
+# visualmente o cabeçalho de TODAS as abas, mesmo as que o script nunca tocou.
+#
+# Solução: editar diretamente, dentro do .zip do .xlsx, apenas o XML da aba
+# "FRE" (xl/worksheets/sheetN.xml), célula a célula, e regravar o pacote
+# mantendo todas as demais partes (drawings, vmlDrawings, media, comments,
+# sharedStrings, outras worksheets) byte a byte idênticas ao modelo original.
+
+def _achar_sheet_xml(zin, nome_aba):
+    wb_xml   = zin.read("xl/workbook.xml").decode("utf-8")
+    rels_xml = zin.read("xl/_rels/workbook.xml.rels").decode("utf-8")
+    m = re.search(r'<sheet name="%s" sheetId="\d+" r:id="(rId\d+)"/>' % re.escape(nome_aba), wb_xml)
+    if not m:
+        raise RuntimeError(f"Aba '{nome_aba}' não encontrada no workbook.xml")
+    rid = m.group(1)
+    m2 = re.search(r'<Relationship Id="%s"[^>]*Target="([^"]+)"' % re.escape(rid), rels_xml)
+    return "xl/" + m2.group(1)
+
+def _shared_strings(zin):
+    try:
+        shared_xml = zin.read("xl/sharedStrings.xml").decode("utf-8")
+    except KeyError:
+        return []
+    return ["".join(re.findall(r'<t[^>]*>(.*?)</t>', si.group(1), re.S))
+            for si in re.finditer(r'<si>(.*?)</si>', shared_xml, re.S)]
+
+def _cell_replacement(ref, attrs, novo_valor):
+    s_m = re.search(r's="(\d+)"', attrs or "")
+    s_attr = f' s="{s_m.group(1)}"' if s_m else ""
+    if isinstance(novo_valor, (int, float)) and not isinstance(novo_valor, bool):
+        return f'<c r="{ref}"{s_attr}><v>{novo_valor}</v></c>'
+    texto = "" if novo_valor is None else _xml_escape(str(novo_valor))
+    return f'<c r="{ref}"{s_attr} t="inlineStr"><is><t xml:space="preserve">{texto}</t></is></c>'
+
+def patch_planilha(caminho_xlsx, nome_aba, valores_por_celula, placeholders=None):
+    """
+    Define valores de células e substitui placeholders de texto SOMENTE na
+    aba `nome_aba`, sem reserializar o restante do pacote .xlsx (preserva
+    imagens, controles de formulário/VML e cabeçalhos das demais abas).
+    """
+    with zipfile.ZipFile(caminho_xlsx, "r") as zin:
+        names = zin.namelist()
+        sheet_path = _achar_sheet_xml(zin, nome_aba)
+        shared = _shared_strings(zin)
+        sheet_xml = zin.read(sheet_path).decode("utf-8")
+        contents = {n: zin.read(n) for n in names}
+
+    def cell_pat(ref):
+        return re.compile(r'<c r="%s"((?:\s+[^>]*?)?)(/>|>(.*?)</c>)' % re.escape(ref), re.S)
+
+    # 1) valores diretos por endereço de célula
+    for ref, val in (valores_por_celula or {}).items():
+        if val is None or val == "":
+            continue
+        m = cell_pat(ref).search(sheet_xml)
+        if not m:
+            print(f"  AVISO: célula {ref} não encontrada em {sheet_path}, ignorando")
+            continue
+        sheet_xml = sheet_xml[:m.start()] + _cell_replacement(ref, m.group(1), val) + sheet_xml[m.end():]
+
+    # 2) substituição de placeholders em qualquer célula de texto da aba
+    if placeholders:
+        def resolver_texto(attrs, inner):
+            t_m = re.search(r't="([^"]+)"', attrs or "")
+            t = t_m.group(1) if t_m else None
+            if inner is None:
+                return None
+            if t == "s":
+                vm = re.search(r'<v>(\d+)</v>', inner)
+                return shared[int(vm.group(1))] if vm else None
+            if t == "inlineStr":
+                return "".join(re.findall(r'<t[^>]*>(.*?)</t>', inner, re.S))
+            if t == "str":
+                vm = re.search(r'<v>(.*?)</v>', inner, re.S)
+                return vm.group(1) if vm else ""
+            return None
+
+        def repl(m):
+            ref, attrs, inner = m.group("ref"), m.group("attrs"), m.group("inner")
+            texto = resolver_texto(attrs, inner)
+            if texto is None:
+                return m.group(0)
+            novo = texto
+            mudou = False
+            for ph, val in placeholders.items():
+                if ph in novo:
+                    novo = novo.replace(ph, "" if val is None else str(val))
+                    mudou = True
+            return _cell_replacement(ref, attrs, novo) if mudou else m.group(0)
+
+        big_pat = re.compile(r'<c r="(?P<ref>[A-Z]+\d+)"(?P<attrs>(?:\s+[^>]*?)?)(?:/>|>(?P<inner>.*?)</c>)', re.S)
+        sheet_xml = big_pat.sub(repl, sheet_xml)
+
+    contents[sheet_path] = sheet_xml.encode("utf-8")
+
+    tmp = caminho_xlsx + ".tmp"
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+        for n in names:
+            zout.writestr(n, contents[n])
+    shutil.move(tmp, caminho_xlsx)
+
 # ── Gerar FRE (.xlsx) ─────────────────────────────────────────────────────────
 
 def gerar_fre(emp):
-    from openpyxl import load_workbook
-
     src = None
     for f in sorted(os.listdir("."), reverse=True):
         if f.upper().startswith("FRE") and f.endswith(".xlsx"):
@@ -381,27 +488,15 @@ def gerar_fre(emp):
         "I67": emp["area_equivalente"] if emp["area_equivalente"] != "" else None,
         "C227": hoje,
     }
+    placeholders = {
+        "{VALOR DO TERRENO}": vt_fmt,
+        "{Nº UNIDADES}": str(n_un) if n_un != "" else "",
+    }
 
     out = nome_arquivo(emp, "FRE", "xlsx")
     shutil.copy2(src, out)
-    wb = load_workbook(out)
-    ws = wb["FRE"]
+    patch_planilha(out, "FRE", mapa_cel, placeholders)
 
-    for cel, val in mapa_cel.items():
-        if val is None or val == "": continue
-        ws[cel].value = val
-
-    # Substitui placeholders de texto em toda a planilha
-    for row in ws.iter_rows():
-        for cell in row:
-            if isinstance(cell.value, str):
-                v = cell.value
-                v = v.replace("{VALOR DO TERRENO}", vt_fmt)
-                v = v.replace("{Nº UNIDADES}", str(n_un) if n_un != "" else "")
-                if v != cell.value:
-                    cell.value = v
-
-    wb.save(out)
     print(f"  FRE: {out}")
     return out
 
